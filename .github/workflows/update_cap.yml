@@ -1,0 +1,98 @@
+name: update cap
+
+# The one pipeline of this repo: mirror the published core package from
+# builder-abap2UI5-js, assemble the full CAP app (src/ + vendored core +
+# webapp overlay), gate it with the app's jest suite, commit the refreshed
+# mirror here and publish the built app 1:1 to the deployable repo
+# cap2UI5/cap2UI5.
+#
+# Runs event-driven on every push to main. That includes the trigger
+# commits builder-abap2UI5-js pushes here via deploy key (its trigger_cap
+# workflow updates UPSTREAM_HEAD after a core rebuild), so the app follows
+# every core update — plus changes to the build tooling itself. The nightly
+# cron remains as a safety net.
+#
+# Cross-repo push uses an SSH deploy key: the public half is registered on
+# cap2UI5/cap2UI5 with write access, the private half is the secret
+# ACTION_KEY_APP here. Without the secret the workflow still builds and
+# tests, it just skips the publish.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC nightly — after the builder-abap2UI5-js pipelines (03:00–05:00)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-cap
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm run mirror_core
+      - name: commit refreshed mirror
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add run/input
+          if git diff --cached --quiet; then
+            echo "mirror unchanged"
+          else
+            git commit -m "mirror: update run/input/core ($(cut -c1-12 run/input/UPSTREAM_COMMIT))"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - run: npm run assemble
+      # one install covers the app AND the vendored core (its deps are part
+      # of the app lock, placed under core/node_modules/)
+      - run: npm ci
+        working-directory: run/output/cap2UI5
+      - run: npm test
+      - name: publish built app to cap2UI5/cap2UI5
+        env:
+          ACTION_KEY_APP: ${{ secrets.ACTION_KEY_APP }}
+        run: |
+          set -euo pipefail
+          if [ -z "$ACTION_KEY_APP" ]; then
+            echo "::warning::secret ACTION_KEY_APP not set — skipping publish to cap2UI5/cap2UI5"
+            exit 0
+          fi
+          UPSTREAM=$(cat run/input/UPSTREAM_COMMIT)
+          APP="$RUNNER_TEMP/cap2UI5"
+
+          mkdir -p ~/.ssh
+          echo "$ACTION_KEY_APP" > ~/.ssh/app_key
+          chmod 600 ~/.ssh/app_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/app_key -o IdentitiesOnly=yes"
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git clone --depth 1 --branch main git@github.com:cap2UI5/cap2UI5.git "$APP"
+
+          PUBLISH_TARGET="$APP" npm run publish
+
+          cd "$APP"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "app unchanged — no publish commit" >> "$GITHUB_STEP_SUMMARY"
+          else
+            git commit -m "build: publish app (core @ ${UPSTREAM:0:12})" \
+              -m "builder: ${GITHUB_SHA}" \
+              -m "run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            git push origin HEAD:main
+            echo "published to cap2UI5/cap2UI5@main: $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          fi

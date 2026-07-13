@@ -1,0 +1,4 @@
+node_modules/
+.mirror_tmp/
+.DS_Store
+run/output/
