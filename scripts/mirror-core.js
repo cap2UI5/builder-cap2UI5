@@ -12,6 +12,14 @@
  * (same convention as the run/input snapshots in builder-abap2UI5-js).
  * run/input/core/ is wiped and rewritten on every run, so upstream
  * deletions propagate.
+ *
+ * The sha in UPSTREAM_HEAD (the trigger slot written by builder-abap2UI5-js)
+ * is honored when it is NEWER than the cloned default-branch HEAD (the
+ * fast-double-push race: the announced commit is not yet what a fresh clone
+ * sees). A stale slot — trigger_cap upstream is manual, so the slot lags —
+ * must not pin the nightly to an old core, so the newer of the two commits
+ * wins (committer date; equal-or-older slot ⇒ HEAD). If the slot sha cannot
+ * be fetched at all, the mirror falls back to HEAD with a warning.
  */
 "use strict";
 
@@ -42,6 +50,13 @@ function copyCore(fromRepo, commit) {
   console.log(`mirror: builder-abap2UI5-js@${commit.slice(0, 12)} core/ → run/input/core/`);
 }
 
+function pinnedSha() {
+  const slot = path.join(root, "UPSTREAM_HEAD");
+  if (!fs.existsSync(slot)) return null;
+  const sha = fs.readFileSync(slot, "utf8").trim();
+  return /^[0-9a-f]{40}$/.test(sha) ? sha : null;
+}
+
 const local = process.env.MIRROR_SOURCE;
 if (local) {
   const commit = execFileSync("git", ["-C", local, "rev-parse", "HEAD"]).toString().trim();
@@ -50,6 +65,23 @@ if (local) {
   fs.rmSync(tmp, { recursive: true, force: true });
   try {
     execFileSync("git", ["clone", "--depth", "1", UPSTREAM, tmp], { stdio: "inherit" });
+    const head = execFileSync("git", ["-C", tmp, "rev-parse", "HEAD"]).toString().trim();
+    const pin = pinnedSha();
+    if (pin && pin !== head) {
+      try {
+        execFileSync("git", ["-C", tmp, "fetch", "--depth", "1", "origin", pin], { stdio: "inherit" });
+        const date = (sha) =>
+          Number(execFileSync("git", ["-C", tmp, "show", "-s", "--format=%ct", sha]).toString().trim());
+        if (date(pin) > date(head)) {
+          execFileSync("git", ["-C", tmp, "checkout", "--force", pin], { stdio: "inherit" });
+          console.log(`mirror: honoring UPSTREAM_HEAD ${pin.slice(0, 12)} (newer than cloned HEAD ${head.slice(0, 12)})`);
+        } else {
+          console.log(`mirror: UPSTREAM_HEAD ${pin.slice(0, 12)} is stale — mirroring HEAD ${head.slice(0, 12)}`);
+        }
+      } catch (e) {
+        console.warn(`mirror: UPSTREAM_HEAD ${pin.slice(0, 12)} not fetchable — falling back to upstream HEAD`);
+      }
+    }
     const commit = execFileSync("git", ["-C", tmp, "rev-parse", "HEAD"]).toString().trim();
     copyCore(tmp, commit);
   } finally {
