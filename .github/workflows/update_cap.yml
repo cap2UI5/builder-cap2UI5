@@ -51,8 +51,18 @@ jobs:
             echo "mirror unchanged"
           else
             git commit -m "mirror: update run/input/core ($(cut -c1-12 run/input/UPSTREAM_COMMIT))"
-            git pull --rebase origin main
-            git push origin HEAD:main
+            # a concurrent push to main between rebase and push loses the
+            # race — retry the rebase+push a few times before giving up
+            for i in 1 2 3; do
+              git pull --rebase origin main
+              if git push origin HEAD:main; then
+                break
+              elif [ "$i" = 3 ]; then
+                echo "push failed after 3 attempts" >&2
+                exit 1
+              fi
+              sleep $((i * 2))
+            done
           fi
       - run: npm run assemble
       # one install covers the app AND the vendored core (its deps are part

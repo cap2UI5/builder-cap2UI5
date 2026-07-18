@@ -46,7 +46,9 @@ const COPY_IGNORE = new Set(["node_modules", "gen", "resources", "mta_archives",
 
 // Local, non-published entries kept across the wipe of run/output/cap2UI5
 // (all gitignored) — avoids a full reinstall after each build.
-const PRESERVE = new Set(["node_modules"]);
+// (.core_node_modules.keep is the stash for core/node_modules, which the
+// app lock places INSIDE the vendored core/ — see below.)
+const PRESERVE = new Set(["node_modules", ".core_node_modules.keep"]);
 
 function copyDir(from, to, topLevel) {
   fs.mkdirSync(to, { recursive: true });
@@ -82,6 +84,13 @@ if (!fs.existsSync(path.join(coreSrc, "package.json"))) {
 }
 
 fs.mkdirSync(dest, { recursive: true });
+// core/node_modules lives inside the wiped core/ — stash it before the wipe
+// (restored after the core vendor step), same preservation as the top-level
+// node_modules.
+const coreNm = path.join(dest, "core", "node_modules");
+const coreNmKeep = path.join(dest, ".core_node_modules.keep");
+fs.rmSync(coreNmKeep, { recursive: true, force: true });
+if (fs.existsSync(coreNm)) fs.renameSync(coreNm, coreNmKeep);
 for (const entry of fs.readdirSync(dest)) {
   if (PRESERVE.has(entry)) continue;
   fs.rmSync(path.join(dest, entry), { recursive: true, force: true });
@@ -90,10 +99,12 @@ copyDir(base, dest, true);
 console.log(`src → run/output/cap2UI5 (source skeleton copied, core dep path rewritten)`);
 
 // vendor the mirrored core package into the app (mirror-core already
-// strips node_modules from the snapshot)
+// strips node_modules from the snapshot), then restore the stashed
+// core/node_modules install
 const coreDest = path.join(dest, "core");
 fs.rmSync(coreDest, { recursive: true, force: true });
 copyDir(coreSrc, coreDest, false);
+if (fs.existsSync(coreNmKeep)) fs.renameSync(coreNmKeep, coreNm);
 console.log(`  vendor core (from run/input/core) → core: ${countFiles(coreDest)} files`);
 
 const webappSrc = path.join(coreSrc, "app", "z2ui5", "webapp");
@@ -122,5 +133,36 @@ for (const [key, entry] of Object.entries(coreLock.packages || {})) {
 }
 fs.writeFileSync(appLockPath, JSON.stringify(appLock, null, 2) + "\n");
 console.log(`  merge core lock → package-lock.json: ${merged} entries under core/node_modules/`);
+
+// Guardrails over the blind string rewrite + lock merge — fail the build
+// here instead of in the downstream `npm ci`:
+{
+  const problems = [];
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(path.join(dest, "package.json"), "utf8"));
+  } catch (e) {
+    problems.push(`package.json is not valid JSON after rewrite: ${e.message}`);
+  }
+  if (pkg && pkg.dependencies?.abap2UI5 !== "file:./core") {
+    problems.push(`package.json dependency abap2UI5 is "${pkg?.dependencies?.abap2UI5}", expected "file:./core"`);
+  }
+  for (const f of ["package.json", "package-lock.json"]) {
+    if (fs.readFileSync(path.join(dest, f), "utf8").includes("run/input/core")) {
+      problems.push(`${f} still references run/input/core after rewrite`);
+    }
+  }
+  const linkEntry = appLock.packages?.["node_modules/abap2UI5"];
+  if (!linkEntry || linkEntry.resolved !== "core") {
+    problems.push(`lock entry node_modules/abap2UI5 does not link "core" (got ${JSON.stringify(linkEntry?.resolved)})`);
+  }
+  if (!appLock.packages?.["core"]) problems.push(`lock has no "core" package entry`);
+  if (merged === 0) problems.push("core lock merge produced 0 entries — empty/renamed core lock?");
+  if (problems.length) {
+    console.error(`assemble: output validation FAILED —\n  - ${problems.join("\n  - ")}`);
+    process.exit(1);
+  }
+  console.log(`  validate: dep rewrite + lock merge OK`);
+}
 
 console.log(`\nassembled → run/output/cap2UI5`);
