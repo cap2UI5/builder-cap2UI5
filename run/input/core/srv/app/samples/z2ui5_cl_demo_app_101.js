@@ -1,5 +1,3 @@
-const z2ui5_cl_util = require("abap2UI5/z2ui5_cl_util");
-const z2ui5_cl_xml_view = require("abap2UI5/z2ui5_cl_xml_view");
 const z2ui5_if_app = require("abap2UI5/z2ui5_if_app");
 
 class z2ui5_cl_demo_app_101 extends z2ui5_if_app {
@@ -8,7 +6,7 @@ class z2ui5_cl_demo_app_101 extends z2ui5_if_app {
   client = null;
 
   async main(client) {
-    this.client = z2ui5_cl_util.abap_copy(client);
+    this.client = client;
     if (client.check_on_init()) {
       this.on_init();
     } else if (client.check_on_navigated()) {
@@ -55,8 +53,12 @@ class z2ui5_cl_demo_app_101 extends z2ui5_if_app {
 
   set_data() {
     let base_url = `https://sapui5.hana.ondemand.com/`;
-    this.t_feed = [{ author: `Alexandrina Victoria`, authorpic: base_url + `test-resources/sap/m/images/dronning_victoria.jpg`, type: `Request`, date: `March 03 2013`, text: `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` + `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` + ` Lorem ipsum dolor sit amet, consetetur sadipscing elitr, seddiamnonumyeirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` + ` Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` + ` Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` + ` Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` }, { author: `George Washington`, authorpic: base_url + `test-resources/sap/m/images/george_washington.jpg`, type: `Reply`, date: `March 04 2013`, text: `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore` }, { author: `Alexandrina Victoria`, authorpic: base_url + `test-resources/sap/m/images/dronning_victoria.jpg`, type: `Request`, date: `March 05 2013`, text: `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat` }, { author: `George Washington`, authorpic: base_url + `test-resources/sap/m/images/george_washington.jpg`, type: `Rejection`, date: `March 07 2013`, text: `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.` }];
+    this.t_feed = z2ui5_cl_util.abap_tab_assign(this.t_feed, [{ author: `Alexandrina Victoria`, authorpic: base_url + `test-resources/sap/m/images/dronning_victoria.jpg`, type: `Request`, date: `March 03 2013`, text: `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` + `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` + ` Lorem ipsum dolor sit amet, consetetur sadipscing elitr, seddiamnonumyeirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` + ` Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` + ` Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` + ` Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.` }, { author: `George Washington`, authorpic: base_url + `test-resources/sap/m/images/george_washington.jpg`, type: `Reply`, date: `March 04 2013`, text: `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore` }, { author: `Alexandrina Victoria`, authorpic: base_url + `test-resources/sap/m/images/dronning_victoria.jpg`, type: `Request`, date: `March 05 2013`, text: `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat` }, { author: `George Washington`, authorpic: base_url + `test-resources/sap/m/images/george_washington.jpg`, type: `Rejection`, date: `March 07 2013`, text: `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.` }]);
   }
 }
 
 module.exports = z2ui5_cl_demo_app_101;
+
+const z2ui5_cl_util = require("abap2UI5/z2ui5_cl_util");
+const z2ui5_cl_xml_view = require("abap2UI5/z2ui5_cl_xml_view");
+

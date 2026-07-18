@@ -36,6 +36,23 @@ function isTrue(v) {
 }
 
 /** ABAP IS INITIAL */
+/** deep INITIAL copy of a value's shape (typed-row template for tables) */
+function initialLike(v) {
+  if (Array.isArray(v)) return [];
+  if (typeof v === "string") return "";
+  if (typeof v === "number") return 0;
+  if (typeof v === "boolean") return false;
+  if (v !== null && typeof v === "object") {
+    const proto = Object.getPrototypeOf(v);
+    if (proto === Object.prototype || proto === null) {
+      const out = {};
+      for (const k of Object.keys(v)) out[k] = initialLike(v[k]);
+      return out;
+    }
+  }
+  return null;
+}
+
 function isInitial(v) {
   if (v === undefined || v === null || v === "" || v === 0 || v === false) return true;
   if (Array.isArray(v)) return v.length === 0;
@@ -596,9 +613,15 @@ class lcl_json_to_abap {
           z2ui5_cx_ajson_error.raise(`Expected table`);
         }
         const out = Array.isArray(container) ? container : [];
+        // ABAP tables are TYPED — new rows carry the line type's components.
+        // Approximate the line type from the first existing row (initial copy)
+        // so corresponding-mode fills keep the JS key case of the container.
+        const template = out.length > 0 && out[0] !== null && typeof out[0] === "object" && !Array.isArray(out[0])
+          ? initialLike(out[0])
+          : undefined;
         out.length = 0;
         for (const child of rowsOfPath(this.mr_nodes, childPath, byArrayIndex)) {
-          out.push(this.build_value(child, undefined));
+          out.push(this.build_value(child, template === undefined ? undefined : initialLike(template)));
         }
         return out;
       }

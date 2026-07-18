@@ -17,9 +17,12 @@ function msgOf(arg) {
   return arg && typeof arg === "object" && !Array.isArray(arg) ? arg.msg : undefined;
 }
 function isInitial(v) {
+  // ABAP semantics: a structure is INITIAL when every component is initial
+  // (typed JS initializers carry all keys, so the check must recurse)
   return v === undefined || v === null || v === "" || v === 0 || v === false ||
     (Array.isArray(v) && !v.length) ||
-    (typeof v === "object" && !Array.isArray(v) && v.constructor === Object && !Object.keys(v).length);
+    (typeof v === "object" && !Array.isArray(v) && v.constructor === Object &&
+      Object.keys(v).every((k) => isInitial(v[k])));
 }
 
 // ABAP-typed equality. Transpiled fixtures lose ABAP's MOVE conversions
@@ -103,6 +106,8 @@ class cl_abap_unit_assert {
   static assert_bound(arg) { const act = actOf(arg); if (act === undefined || act === null) fail(msgOf(arg), act); return true; }
   static assert_not_bound(arg) { const act = actOf(arg); if (act !== undefined && act !== null) fail(msgOf(arg), act); return true; }
   static fail(arg) { fail(typeof arg === "string" ? arg : arg?.msg); }
+  // ABAP: raises cx_aunit_abort — cancels the test method (counts as failed)
+  static abort(arg) { fail(typeof arg === "string" ? arg : arg?.msg || "test aborted (cl_abap_unit_assert=>abort)"); }
   // ABAP CP pattern: '*' any sequence, '+' any single char, case-insensitive
   static assert_char_cp({ act, exp, msg } = {}) {
     const rx = new RegExp(`^${String(exp ?? "").replace(/[.^${}()|[\]\\?]/g, "\\$&").replace(/\*/g, ".*").replace(/\+/g, ".")}$`, "is");

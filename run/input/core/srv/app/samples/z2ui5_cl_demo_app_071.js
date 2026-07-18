@@ -1,5 +1,3 @@
-const z2ui5_cl_util = require("abap2UI5/z2ui5_cl_util");
-const z2ui5_cl_xml_view = require("abap2UI5/z2ui5_cl_xml_view");
 const z2ui5_if_app = require("abap2UI5/z2ui5_if_app");
 
 class z2ui5_cl_demo_app_071 extends z2ui5_if_app {
@@ -10,7 +8,7 @@ class z2ui5_cl_demo_app_071 extends z2ui5_if_app {
   async main(client) {
     switch (client.get().EVENT) {
       case `UPDATE`:
-        client.follow_up_action({ val: `SET_SIZE_LIMIT`, t_arg: [(this.mv_set_size_limit), client.cs_view.main] });
+        client.follow_up_action(`SET_SIZE_LIMIT`, [(this.mv_set_size_limit), client.cs_view.main]);
         client.message_toast_display(`SizeLimitUpdated`);
         return;
         break;
@@ -34,3 +32,7 @@ class z2ui5_cl_demo_app_071 extends z2ui5_if_app {
 }
 
 module.exports = z2ui5_cl_demo_app_071;
+
+const z2ui5_cl_util = require("abap2UI5/z2ui5_cl_util");
+const z2ui5_cl_xml_view = require("abap2UI5/z2ui5_cl_xml_view");
+

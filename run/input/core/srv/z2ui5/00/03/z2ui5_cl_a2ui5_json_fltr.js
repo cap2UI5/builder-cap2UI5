@@ -1,5 +1,3 @@
-const z2ui5_if_ajson_filter = require("abap2UI5/z2ui5_if_ajson_filter");
-const z2ui5_if_ajson_types = require("abap2UI5/z2ui5_if_ajson_types");
 
 class z2ui5_cl_a2ui5_json_fltr {
   static create_no_empty_values() {
@@ -34,3 +32,7 @@ class z2ui5_cl_a2ui5_json_fltr {
 }
 
 module.exports = z2ui5_cl_a2ui5_json_fltr;
+
+const z2ui5_if_ajson_filter = require("abap2UI5/z2ui5_if_ajson_filter");
+const z2ui5_if_ajson_types = require("abap2UI5/z2ui5_if_ajson_types");
+
