@@ -129,7 +129,7 @@ class z2ui5_cl_sample_app_001 extends z2ui5_if_app {
         _fs$fs_block = sy_subrc === 0 ? { o: _t, k: _i } : null;
       }
       if (sy_subrc !== 0) {
-        fs_block = { group: tile.group, base: base };
+        fs_block = { group: tile.group, base: base, width: 0 };
         result.push(fs_block);
       }
       width = this.header_width({ header: tile.header });

@@ -26,7 +26,7 @@ class z2ui5_cl_demo_app_028 extends z2ui5_if_app {
 
   on_event() {
     this.counter = this.counter + 1;
-    this.t_tab.push({ title: `entry${this.counter}`, info: `completed`, descr: `this is a description`, icon: `sap-icon://account` });
+    this.t_tab.push({ title: `entry${this.counter}`, info: `completed`, descr: `this is a description`, icon: `sap-icon://account`, value: ``, checkbox: false });
     if (this.counter < 3) {
       this.start_timer();
     } else {

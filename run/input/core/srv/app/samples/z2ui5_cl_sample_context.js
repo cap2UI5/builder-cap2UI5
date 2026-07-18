@@ -158,7 +158,7 @@ class z2ui5_cl_sample_context {
     sy_tabix = 0;
     for (const lr_comp of z2ui5_cl_sample_context.rtti_get_t_attri_by_any({ val: val })) {
       sy_tabix++;
-      result.push({ name: lr_comp.name });
+      result.push({ name: lr_comp.name, t_range: [], t_token: [], t_token_added: [], t_token_removed: [] });
     }
     return result;
   }
@@ -239,7 +239,7 @@ class z2ui5_cl_sample_context {
       lv_value = lt_mapping.find((row) => row.n === lr_row.option).v;
       // TODO(abap2js): REPLACE `{LOW}` IN lv_value WITH lr_row->low.
       // TODO(abap2js): REPLACE `{HIGH}` IN lv_value WITH lr_row->high.
-      result.push({ key: lv_value, text: lv_value, visible: true, editable: true });
+      result.push({ key: lv_value, text: lv_value, visible: true, editable: true, selkz: false });
     }
     return result;
   }
@@ -900,7 +900,7 @@ class z2ui5_cl_sample_context {
       if (names.some((row) => row.table_line === lr_comp.name)) {
         lv_check_key = true;
       }
-      result.push({ fieldname: lr_comp.name, rollname: lr_comp.name, keyflag: lv_check_key, scrtext_s: lr_comp.name, scrtext_m: lr_comp.name, scrtext_l: lr_comp.name });
+      result.push({ fieldname: lr_comp.name, rollname: lr_comp.name, keyflag: lv_check_key, scrtext_s: lr_comp.name, scrtext_m: lr_comp.name, scrtext_l: lr_comp.name, tabname: ``, langu: ``, position: ``, offset: ``, domname: ``, checktable: ``, leng: ``, intlen: ``, outputlen: ``, decimals: ``, datatype: ``, inttype: ``, reftable: ``, reffield: ``, precfield: ``, authorid: ``, memoryid: ``, logflag: ``, mask: ``, masklen: ``, convexit: ``, headlen: ``, scrlen1: ``, scrlen2: ``, scrlen3: ``, fieldtext: ``, reptext: ``, lowercase: ``, mac: ``, genkey: ``, noforkey: ``, valexi: ``, noauthch: ``, sign: ``, dynpfld: ``, f4availabl: ``, comptype: ``, lfieldname: ``, ltrflddis: ``, bidictrlc: ``, outputstyle: ``, nohistory: ``, ampmformat: `` });
     }
     return result;
   }
@@ -1022,7 +1022,7 @@ class z2ui5_cl_sample_context {
         break;
       default:
         if (z2ui5_cl_sample_context.rtti_check_clike({ val: val })) {
-          result.push({ text: val });
+          result.push({ text: val, id: ``, no: ``, type: ``, v1: ``, v2: ``, v3: ``, v4: ``, timestampl: null, t_meta: [] });
         }
         break;
     }

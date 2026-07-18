@@ -50,11 +50,11 @@ class z2ui5_cl_demo_app_294 extends z2ui5_if_app {
     this.s_text = {};
     this.lt_a_data = {};
     this.s_text = `DatePicker with valueState `;
-    this.lt_a_data.push({ label: this.s_text + `None`, value_state: `None` });
-    this.lt_a_data.push({ label: this.s_text + `Information`, value_state: `Information` });
-    this.lt_a_data.push({ label: this.s_text + `Success`, value_state: `Success` });
+    this.lt_a_data.push({ label: this.s_text + `None`, value_state: `None`, value_state_text: `` });
+    this.lt_a_data.push({ label: this.s_text + `Information`, value_state: `Information`, value_state_text: `` });
+    this.lt_a_data.push({ label: this.s_text + `Success`, value_state: `Success`, value_state_text: `` });
     this.lt_a_data.push({ label: this.s_text + `Warning and long valueStateText`, value_state: `Warning`, value_state_text: `Warning message. This is an extra long text used as a warning message. ` + `It illustrates how the text wraps into two or more lines without truncation to show the full length of the message.` });
-    this.lt_a_data.push({ label: this.s_text + `Error`, value_state: `Error` });
+    this.lt_a_data.push({ label: this.s_text + `Error`, value_state: `Error`, value_state_text: `` });
   }
 }
 

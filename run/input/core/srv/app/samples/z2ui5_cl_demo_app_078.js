@@ -39,7 +39,7 @@ class z2ui5_cl_demo_app_078 extends z2ui5_if_app {
         sy_tabix = 0;
         for (const ls_token of this.mt_tokens_added) {
           sy_tabix++;
-          this.mt_token.push({ key: ls_token.key, text: ls_token.text, visible: true, editable: true });
+          this.mt_token.push({ key: ls_token.key, text: ls_token.text, visible: true, editable: true, selkz: false });
         }
         this.mt_tokens_removed = {};
         this.mt_tokens_added = {};

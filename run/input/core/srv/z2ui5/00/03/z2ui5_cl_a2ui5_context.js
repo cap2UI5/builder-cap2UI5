@@ -213,7 +213,7 @@ class z2ui5_cl_a2ui5_context {
       lv_value = lt_mapping.find((row) => row.n === lr_row.option).v;
       // TODO(abap2js): REPLACE `{LOW}` IN lv_value WITH lr_row->low.
       // TODO(abap2js): REPLACE `{HIGH}` IN lv_value WITH lr_row->high.
-      result.push({ key: lv_value, text: lv_value, visible: true, editable: true });
+      result.push({ key: lv_value, text: lv_value, visible: true, editable: true, selkz: false });
     }
     return result;
   }
@@ -1115,7 +1115,7 @@ class z2ui5_cl_a2ui5_context {
         break;
       default:
         if (z2ui5_cl_a2ui5_context.rtti_check_clike({ val: val })) {
-          result.push({ text: val });
+          result.push({ text: val, id: ``, no: ``, type: ``, v1: ``, v2: ``, v3: ``, v4: ``, timestampl: null, t_meta: [] });
         }
         break;
     }
