@@ -62,7 +62,7 @@ class z2ui5_cl_demo_app_197 extends z2ui5_if_app {
           for (const l_member of l_members) {
             sy_tabix++;
             lv_val = lo_json.get(`/` + l_member + `/mProperties/text`);
-            lt_range.push({ sign: `I`, option: `EQ`, low: lv_val });
+            lt_range.push(z2ui5_cl_util.abap_copy({ sign: `I`, option: `EQ`, low: lv_val }));
           }
         } catch (error) {
         }

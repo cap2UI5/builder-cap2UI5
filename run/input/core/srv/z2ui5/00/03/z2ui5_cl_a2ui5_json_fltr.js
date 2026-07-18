@@ -8,7 +8,8 @@ class z2ui5_cl_a2ui5_json_fltr {
     return result;
   }
 
-  keep_node() {
+  keep_node({ is_node, iv_visit = z2ui5_if_ajson_filter.visit_type.value } = {}) {
+    let rv_keep = false;
     rv_keep = true;
     switch (iv_visit) {
       case z2ui5_if_ajson_filter.visit_type.value:
@@ -28,6 +29,7 @@ class z2ui5_cl_a2ui5_json_fltr {
         rv_keep = (is_node.children !== 0);
         break;
     }
+    return rv_keep;
   }
 }
 

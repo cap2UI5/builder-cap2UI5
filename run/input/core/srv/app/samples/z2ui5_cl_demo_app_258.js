@@ -73,15 +73,18 @@ class z2ui5_cl_demo_app_258 extends z2ui5_if_app {
       .navigation_list_item({ text: `Fixed Entry 2`, icon: `sap-icon://flight`, select: client._event(`MENU_FIX2`), key: `Fix2` })
       .navigation_list_item({ text: `Fixed Entry 3`, icon: `sap-icon://email-read`, select: client._event(`MENU_FIX3`), key: `Fix3` })
       .navigation_list_item({ text: `Link`, icon: `sap-icon://chain-link`, href: `https://github.com/abap2UI5/abap2UI5` });
-    const site_content = content.flex_box({ id: `site_content`, class: `sapUiTinyMarginTop sapUiTinyMarginBegin`, width: `100%`, height: `100%`, backgrounddesign: `Solid`, alignitems: `Center`, justifycontent: `Center` })
+    let site_content = content.flex_box({ id: `site_content`, class: `sapUiTinyMarginTop sapUiTinyMarginBegin`, width: `100%`, height: `100%`, backgrounddesign: `Solid`, alignitems: `Center`, justifycontent: `Center` })
       .layout_data()
       .flex_item_data({ growfactor: `4`, backgrounddesign: `Solid` })
       .get_parent();
-    this.render_site_content({ client, site_content });
+    const _out0 = { client, site_content };
+    this.render_site_content(_out0);
+    if ("site_content" in _out0) site_content = _out0.site_content;
     client.view_display(page.stringify());
   }
 
-  render_site_content({ client, site_content } = {}) {
+  render_site_content(_args = {}) {
+    let { client, site_content } = _args;
     switch (this.selected_menu_entry) {
       case `Home`:
         site_content.text(`Welcome to the Home Page`);
@@ -111,6 +114,7 @@ class z2ui5_cl_demo_app_258 extends z2ui5_if_app {
         site_content.text(`Welcome to the third fixed Page`);
         break;
     }
+    Object.assign(_args, { site_content });
   }
 
   async main(client) {

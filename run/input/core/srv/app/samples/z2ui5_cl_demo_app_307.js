@@ -73,9 +73,9 @@ class z2ui5_cl_demo_app_307 extends z2ui5_if_app {
         drop_position = drop_position - 1;
       }
       if (insert_position === `Before`) {
-        this.items.splice((drop_position) - 1, 0, item);
+        this.items.splice((drop_position) - 1, 0, z2ui5_cl_util.abap_copy(item));
       } else {
-        this.items.splice((drop_position + 1) - 1, 0, item);
+        this.items.splice((drop_position + 1) - 1, 0, z2ui5_cl_util.abap_copy(item));
       }
     }
     client.view_model_update();

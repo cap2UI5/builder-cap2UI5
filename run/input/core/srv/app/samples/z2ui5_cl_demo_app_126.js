@@ -31,7 +31,7 @@ class z2ui5_cl_demo_app_126 extends z2ui5_if_app {
         for (const com of comp) {
           sy_tabix++;
           if (!(com.as_include === true || com.as_include === `X`)) {
-            result.push(com);
+            result.push(z2ui5_cl_util.abap_copy(com));
           }
         }
       } catch (error) {

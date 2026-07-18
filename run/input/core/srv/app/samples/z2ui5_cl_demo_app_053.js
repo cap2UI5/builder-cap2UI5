@@ -59,7 +59,9 @@ class z2ui5_cl_demo_app_053 extends z2ui5_if_app {
 
   set_search() {
     if (this.mv_search_value) {
-      z2ui5_cl_sample_context.itab_filter_by_val({ val: this.mv_search_value, tab: this.mt_table });
+      const _out0 = { val: this.mv_search_value, tab: this.mt_table };
+      z2ui5_cl_sample_context.itab_filter_by_val(_out0);
+      if ("tab" in _out0) this.mt_table = _out0.tab;
     }
   }
 }

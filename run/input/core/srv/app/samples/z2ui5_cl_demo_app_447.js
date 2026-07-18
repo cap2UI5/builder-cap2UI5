@@ -10,7 +10,7 @@ class z2ui5_cl_demo_app_447 extends z2ui5_if_app {
     this.client = z2ui5_cl_util.abap_copy(client);
     if (client.check_on_init()) {
       for (let sy_index = 1; sy_index <= 30; sy_index++) {
-        this.mt_row.push({ index: sy_index, text: `Row number ${sy_index}` });
+        this.mt_row.push(z2ui5_cl_util.abap_copy({ index: sy_index, text: `Row number ${sy_index}` }));
       }
       this.view_display();
     } else {
