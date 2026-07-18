@@ -7,7 +7,7 @@ class z2ui5_cl_demo_app_278 extends z2ui5_if_app {
 
   view_display({ client } = {}) {
     const css = `.tileLayout {` + `    float: left;` + `}`;
-    let base_url = ``;
+    let base_url = `https://sapui5.hana.ondemand.com/`;
     const page = z2ui5_cl_xml_view.factory()
       .shell()
       .page({ title: `abap2UI5 - Sample: Feed and News Tile`, navbuttonpress: client._event_nav_app_leave(), shownavbutton: client.check_app_prev_stack() });

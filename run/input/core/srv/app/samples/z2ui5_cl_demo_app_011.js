@@ -67,7 +67,7 @@ class z2ui5_cl_demo_app_011 extends z2ui5_if_app {
       for (let _i = this.t_tab.length - 1; _i >= 0; _i--) { const row = this.t_tab[_i]; if ((row.selkz === true || row.selkz === `X`)) this.t_tab.splice(_i, 1); }
       client.view_model_update();
     } else if (client.check_on_event(`BUTTON_ADD`)) {
-      this.t_tab.push({});
+      this.t_tab.push(z2ui5_cl_util.abap_copy({}));
       client.view_model_update();
     }
   }

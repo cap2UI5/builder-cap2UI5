@@ -71,7 +71,7 @@ class z2ui5_cl_demo_app_097 extends z2ui5_if_app {
           if (sy_subrc === 0) ls_sel = _t[_i];
         }
         ls_sel.uuid = z2ui5_cl_sample_context.uuid_get_c32();
-        this.t_tab2.push(ls_sel);
+        this.t_tab2.push(z2ui5_cl_util.abap_copy(ls_sel));
         this.mv_layout = `TwoColumnsMidExpanded`;
         client.nest_view_model_update();
         client.view_model_update();

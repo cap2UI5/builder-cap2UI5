@@ -57,19 +57,25 @@ function pinnedSha() {
   return /^[0-9a-f]{40}$/.test(sha) ? sha : null;
 }
 
+// git fetch/clone may spawn a DETACHED auto-gc that still writes into
+// .mirror_tmp/.git while the finally-cleanup deletes it (observed as
+// ENOTEMPTY in update_cap) — disable auto-gc and retry the rm.
+const GIT_NO_GC = ["-c", "gc.auto=0", "-c", "gc.autoDetach=false", "-c", "maintenance.auto=false"];
+const rmTmp = () => fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+
 const local = process.env.MIRROR_SOURCE;
 if (local) {
   const commit = execFileSync("git", ["-C", local, "rev-parse", "HEAD"]).toString().trim();
   copyCore(local, commit);
 } else {
-  fs.rmSync(tmp, { recursive: true, force: true });
+  rmTmp();
   try {
-    execFileSync("git", ["clone", "--depth", "1", UPSTREAM, tmp], { stdio: "inherit" });
+    execFileSync("git", [...GIT_NO_GC, "clone", "--depth", "1", UPSTREAM, tmp], { stdio: "inherit" });
     const head = execFileSync("git", ["-C", tmp, "rev-parse", "HEAD"]).toString().trim();
     const pin = pinnedSha();
     if (pin && pin !== head) {
       try {
-        execFileSync("git", ["-C", tmp, "fetch", "--depth", "1", "origin", pin], { stdio: "inherit" });
+        execFileSync("git", ["-C", tmp, ...GIT_NO_GC, "fetch", "--depth", "1", "origin", pin], { stdio: "inherit" });
         const date = (sha) =>
           Number(execFileSync("git", ["-C", tmp, "show", "-s", "--format=%ct", sha]).toString().trim());
         if (date(pin) > date(head)) {
@@ -85,6 +91,6 @@ if (local) {
     const commit = execFileSync("git", ["-C", tmp, "rev-parse", "HEAD"]).toString().trim();
     copyCore(tmp, commit);
   } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
+    rmTmp();
   }
 }

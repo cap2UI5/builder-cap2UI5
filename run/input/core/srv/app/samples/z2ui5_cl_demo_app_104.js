@@ -78,7 +78,7 @@ class z2ui5_cl_demo_app_104 extends z2ui5_if_app {
           sy_subrc = _i >= 0 && _i < _t.length ? 0 : 4;
           if (sy_subrc === 0) ls_sel = _t[_i];
         }
-        this.t_tab2.push(ls_sel);
+        this.t_tab2.push(z2ui5_cl_util.abap_copy(ls_sel));
         if (this.classname) {
           this.view_display_master();
         }

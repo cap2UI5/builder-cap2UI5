@@ -59,7 +59,7 @@ class z2ui5_cl_demo_app_306 extends z2ui5_if_app {
     }
     switch (client.get().EVENT) {
       case `CAPTURE`:
-        this.mt_picture.push({ data: this.mv_picture_base, thumbnail: this.mv_picture_thumb, time: sy_uzeit, id: ``, name: ``, selected: false });
+        this.mt_picture.push(z2ui5_cl_util.abap_copy({ data: this.mv_picture_base, thumbnail: this.mv_picture_thumb, time: sy_uzeit, id: ``, name: ``, selected: false }));
         this.mv_picture_base = {};
         this.mv_picture_thumb = {};
         client.view_model_update();
@@ -88,7 +88,7 @@ class z2ui5_cl_demo_app_306 extends z2ui5_if_app {
     sy_tabix = 0;
     for (const ls_pic of this.mt_picture) {
       sy_tabix++;
-      this.mt_picture_out.push({ name: `picture ${sy_tabix}`, id: sy_tabix, thumbnail: ls_pic.thumbnail, selected: (sy_tabix === this.selected_picture.id ? true : null), time: ``, data: `` });
+      this.mt_picture_out.push(z2ui5_cl_util.abap_copy({ name: `picture ${sy_tabix}`, id: sy_tabix, thumbnail: ls_pic.thumbnail, selected: (sy_tabix === this.selected_picture.id ? true : null), time: ``, data: `` }));
     }
   }
 

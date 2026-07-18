@@ -49,9 +49,9 @@ class z2ui5_cl_demo_app_061 extends z2ui5_if_app {
     if (client.check_on_init()) {
       // TODO(abap2js): CREATE DATA t_tab TYPE STANDARD TABLE OF (`Z2UI5_T_01`).
       // TODO(abap2js): ASSIGN t_tab->* TO <tab>.
-      fs_tab.push({ id: `this is an uuid`, timestampl: `2023234243`, id_prev: `previous` });
-      fs_tab.push({ id: `this is an uuid`, timestampl: `2023234243`, id_prev: `previous` });
-      fs_tab.push({ id: `this is an uuid`, timestampl: `2023234243`, id_prev: `previous` });
+      fs_tab.push(z2ui5_cl_util.abap_copy({ id: `this is an uuid`, timestampl: `2023234243`, id_prev: `previous` }));
+      fs_tab.push(z2ui5_cl_util.abap_copy({ id: `this is an uuid`, timestampl: `2023234243`, id_prev: `previous` }));
+      fs_tab.push(z2ui5_cl_util.abap_copy({ id: `this is an uuid`, timestampl: `2023234243`, id_prev: `previous` }));
     }
     this.set_view();
   }

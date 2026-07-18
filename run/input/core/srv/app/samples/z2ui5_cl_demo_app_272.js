@@ -6,7 +6,7 @@ class z2ui5_cl_demo_app_272 extends z2ui5_if_app {
   client = null;
 
   view_display({ client } = {}) {
-    let base_url = ``;
+    let base_url = `https://sapui5.hana.ondemand.com/`;
     const view = z2ui5_cl_xml_view.factory();
     const page = view.shell()
       .page({ title: `abap2UI5 - Object Header with Circle-shaped Image`, navbuttonpress: client._event_nav_app_leave(), shownavbutton: client.check_app_prev_stack() })

@@ -18,7 +18,7 @@ class z2ui5_cl_demo_app_362 extends z2ui5_if_app {
 
   on_init() {
     for (let sy_index = 1; sy_index <= 100; sy_index++) {
-      this.t_tab.push({ title: `Row ${sy_index}`, value: `red`, info: `completed`, descr: `this is a description` });
+      this.t_tab.push(z2ui5_cl_util.abap_copy({ title: `Row ${sy_index}`, value: `red`, info: `completed`, descr: `this is a description` }));
     }
     this.view_display();
   }

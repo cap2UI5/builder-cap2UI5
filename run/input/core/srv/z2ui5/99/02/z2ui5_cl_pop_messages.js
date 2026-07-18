@@ -15,7 +15,7 @@ class z2ui5_cl_pop_messages extends z2ui5_if_app {
     sy_tabix = 0;
     for (const lr_row of z2ui5_cl_a2ui5_context.msg_get_t(i_messages)) {
       sy_tabix++;
-      r_result.mt_msg.push({ type: z2ui5_cl_a2ui5_context.ui5_get_msg_type(lr_row.type), title: lr_row.text, subtitle: `${lr_row.id} ${lr_row.no}` });
+      r_result.mt_msg.push(z2ui5_cl_util.abap_copy({ type: z2ui5_cl_a2ui5_context.ui5_get_msg_type(lr_row.type), title: lr_row.text, subtitle: `${lr_row.id} ${lr_row.no}` }));
     }
     r_result.title = z2ui5_cl_util.abap_copy(i_title);
     return r_result;
