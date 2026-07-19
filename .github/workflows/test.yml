@@ -1,10 +1,11 @@
 name: test
 
-# Runs the app build + the CAP app's jest suite on every pull request (and
-# on pushes to main): assemble the app from src/ + the committed core mirror
-# (run/input/core), install and run its tests. Make this check "Required" in
-# the branch protection rules of `main` so a PR can only be merged once the
-# tests pass.
+# Runs the builder's own unit tests plus the app build + the CAP app's jest
+# suite on every pull request (and on pushes to main): install the builder's
+# dev deps (jest), assemble the app from src/ + the committed core mirror
+# (run/input/core), install and run everything (`npm test` = builder script
+# tests + the app suite). Make this check "Required" in the branch
+# protection rules of `main` so a PR can only be merged once the tests pass.
 
 on:
   pull_request:
@@ -23,6 +24,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      # the builder's own dev deps (jest for the script tests)
+      - run: npm ci
       - run: npm run assemble
       # one install covers the app AND the vendored core (its deps are part
       # of the app lock, placed under core/node_modules/)

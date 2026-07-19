@@ -41,6 +41,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      # the builder's own dev deps (jest for the script tests, run by `npm test`)
+      - run: npm ci
       - run: npm run mirror_core
       - name: commit refreshed mirror
         run: |
