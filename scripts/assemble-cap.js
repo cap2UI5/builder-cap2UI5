@@ -26,7 +26,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const root = path.join(__dirname, "..");          // repo root
+// repo root — overridable for the unit tests (test/assemble-cap.test.js),
+// which run the script against temporary fixture trees.
+const root = process.env.ASSEMBLE_ROOT
+  ? path.resolve(process.env.ASSEMBLE_ROOT)
+  : path.join(__dirname, "..");
 const base = path.join(root, "src");
 const coreSrc = path.join(root, "run", "input", "core");
 const dest = path.join(root, "run", "output", "cap2UI5");

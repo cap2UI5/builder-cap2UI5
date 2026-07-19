@@ -29,16 +29,19 @@ that push starts `update_cap`.
 | `run/input/core/` | mirror of builder-abap2UI5-js:`core/` (committed; upstream sha in `run/input/UPSTREAM_COMMIT`) | never — rewritten by `npm run mirror_core` |
 | `run/output/cap2UI5/` | the assembled app (gitignored staging; `node_modules` preserved across builds) | never |
 | `scripts/` | `mirror-core.js`, `assemble-cap.js`, `publish-cap.js` | yes |
+| `test/` | the builder's own jest tests (assemble rewrite/lock-merge/guardrails, against temp fixtures) — NOT published; the app's tests live in `src/test/` | yes |
 | `UPSTREAM_HEAD` | trigger slot written by builder-abap2UI5-js | never by hand |
 
 ## Build & test
 
 ```bash
+npm ci                # the builder's own dev deps (jest)
 npm run mirror_core   # snapshot builder-abap2UI5-js:core/ → run/input/core
                       # (MIRROR_SOURCE=/path/to/builder-abap2UI5-js for a local checkout)
 npm run assemble      # src/ + vendored core + webapp overlay → run/output/cap2UI5
 cd run/output/cap2UI5 && npm ci && cd ../../..   # ONE install covers app + core
-npm test              # the app's jest suite, run inside run/output/cap2UI5
+npm test              # test:builder (script tests, test/) + test:app (the
+                      # app's jest suite, run inside run/output/cap2UI5)
 npm run publish       # 1:1 copy → ../cap2UI5 (sibling checkout) or PUBLISH_TARGET=…
 npm run build_cap     # assemble + publish
 ```
