@@ -144,6 +144,29 @@ describe("assemble-cap happy path", () => {
     expect(lock.packages["node_modules/express"].version).toBe("5.0.0");
   });
 
+  test("html5 module scaffolding in src/app/z2ui5 survives the webapp overlay", () => {
+    root = makeFixture();
+    // the deployable html5 module (mta.yaml `abap2UI5`, path app/z2ui5)
+    // ships its build scaffolding as a sibling of webapp/. The overlay must
+    // replace only app/z2ui5/webapp, never the scaffolding next to it.
+    writeJson(path.join(root, "src", "app", "z2ui5", "package.json"), {
+      name: "z2ui5",
+      scripts: { "build:cf": "ui5 build --clean-dest --dest dist" },
+    });
+    write(path.join(root, "src", "app", "z2ui5", "ui5.yaml"), "type: application\n");
+    write(path.join(root, "src", "app", "z2ui5", "xs-app.json"), "{}\n");
+
+    expect(runAssemble(root).status).toBe(0);
+
+    const z2ui5 = path.join(root, "run", "output", "cap2UI5", "app", "z2ui5");
+    // scaffolding preserved verbatim …
+    expect(readJson(path.join(z2ui5, "package.json")).scripts["build:cf"]).toBeDefined();
+    expect(fs.existsSync(path.join(z2ui5, "ui5.yaml"))).toBe(true);
+    expect(fs.existsSync(path.join(z2ui5, "xs-app.json"))).toBe(true);
+    // … and the webapp is still overlaid from the core right beside it
+    expect(fs.existsSync(path.join(z2ui5, "webapp", "Component.js"))).toBe(true);
+  });
+
   test("is idempotent — a second run succeeds and produces the same lock", () => {
     root = makeFixture();
     expect(runAssemble(root).status).toBe(0);
