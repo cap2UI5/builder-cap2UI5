@@ -44,6 +44,13 @@ engine.register_app_dir(require("path").join(__dirname, "app"));
 cds.on("served", () => require("./draft-retention").start());
 
 cds.on("bootstrap", (app) => {
+  // Readiness probe — mta.yaml declares
+  // readiness-health-check-http-endpoint: /health for the abap2UI5-srv
+  // module, so CF polls this route to decide the instance is up. It must stay
+  // public (the probe carries no auth) and cheap; a bare 200 is enough since
+  // the process answering at all is the signal CF needs.
+  app.get("/health", (_req, res) => res.status(200).json({ status: "UP" }));
+
   // Serve the local UI5 runtime at /resources (must be registered before the
   // CDS services so it is not shadowed by the OData/REST routing) — the app
   // bootstraps from `/resources/sap-ui-core.js` (see patch-frontend.js /
