@@ -44,6 +44,16 @@ jobs:
       # the builder's own dev deps (jest for the script tests, run by `npm test`)
       - run: npm ci
       - run: npm run mirror_core
+      - run: npm run assemble
+      # one install covers the app AND the vendored core (its deps are part
+      # of the app lock, placed under core/node_modules/)
+      - run: npm ci
+        working-directory: run/output/cap2UI5
+      - run: npm test
+      # Commit the refreshed mirror ONLY after assemble + the app's jest suite
+      # pass. Committing earlier would land a broken upstream core on main
+      # permanently even though the publish is correctly gated; gating the
+      # mirror commit on the same green keeps main buildable.
       - name: commit refreshed mirror
         run: |
           git config user.name "github-actions[bot]"
@@ -66,12 +76,6 @@ jobs:
               sleep $((i * 2))
             done
           fi
-      - run: npm run assemble
-      # one install covers the app AND the vendored core (its deps are part
-      # of the app lock, placed under core/node_modules/)
-      - run: npm ci
-        working-directory: run/output/cap2UI5
-      - run: npm test
       - name: publish built app to cap2UI5/cap2UI5
         env:
           ACTION_KEY_APP: ${{ secrets.ACTION_KEY_APP }}

@@ -4,3 +4,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # The CAP app's own dependencies live in src/ (@sap/cds, jest, mbt, …); the
+  # published app lock is regenerated from here, so keep this manifest current.
+  - package-ecosystem: npm
+    directory: /src
+    schedule:
+      interval: weekly

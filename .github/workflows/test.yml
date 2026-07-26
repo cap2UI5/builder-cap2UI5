@@ -24,8 +24,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      # the builder's own dev deps (jest for the script tests)
+      # the builder's own dev deps (jest for the script tests, eslint)
       - run: npm ci
+      - run: npm run lint
       - run: npm run assemble
       # one install covers the app AND the vendored core (its deps are part
       # of the app lock, placed under core/node_modules/)
