@@ -45,7 +45,10 @@ function makeFixture() {
         name: "fixture-app",
         dependencies: { abap2UI5: "file:../run/input/core", express: "^5" },
       },
-      "../run/input/core": { name: "abap2UI5", version: "1.0.0" },
+      // Mirrors the real lock: the frozen core entry carries the core's own
+      // declared dependencies, which the assemble drift-guard checks against
+      // run/input/core/package.json.
+      "../run/input/core": { name: "abap2UI5", version: "1.0.0", dependencies: { "openui5-dist": "1.113.0" } },
       "node_modules/abap2UI5": { resolved: "../run/input/core", link: true },
       "node_modules/express": { version: "5.0.0", resolved: "https://registry.npmjs.org/express/-/express-5.0.0.tgz" },
     },
@@ -251,5 +254,18 @@ describe("assemble-cap guardrails", () => {
     const res = runAssemble(root);
     expect(res.status).toBe(1);
     expect(res.stderr).toContain("still references run/input/core");
+  });
+
+  test("fails when the mirrored core's dependencies drift from the frozen lock entry", () => {
+    root = makeFixture();
+    // The mirrored core adds a dependency that the frozen src lock entry
+    // (../run/input/core) does not know about — an npm-ci-breaking drift.
+    const corePkgPath = path.join(root, "run", "input", "core", "package.json");
+    const corePkg = readJson(corePkgPath);
+    corePkg.dependencies["some-new-dep"] = "^2.0.0";
+    writeJson(corePkgPath, corePkg);
+    const res = runAssemble(root);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain("core dependencies drifted");
   });
 });

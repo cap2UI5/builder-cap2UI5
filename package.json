@@ -8,6 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "lint": "eslint .",
     "mirror_core": "node scripts/mirror-core.js",
     "assemble": "node scripts/assemble-cap.js",
     "publish": "node scripts/publish-cap.js",
@@ -27,6 +28,8 @@
   },
   "repository": "github:cap2UI5/builder-cap2UI5",
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
     "jest": "^30.4.2"
   }
 }

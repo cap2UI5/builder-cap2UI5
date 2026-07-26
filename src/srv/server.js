@@ -67,6 +67,13 @@ cds.on("bootstrap", (app) => {
     (_req, res) => res.status(404).end(),
   );
 
+  // Auth boundary: the DATA endpoints — the POST z2ui5 roundtrip action and
+  // the AdminService OData entities — are restricted to authenticated users
+  // (@requires in z2ui5-service.cds). The GET/HEAD routes below are
+  // deliberately left public: they serve only the static UI5 bootstrap shell
+  // and the CSRF/terminate ack, carry no user data, and keeping them open
+  // preserves the offline/dev flow. In BTP the approuter authenticates before
+  // the frontend can reach them anyway.
   app.get("/rest/root/z2ui5", (req, res) => {
     // The engine call renders arbitrary app HTML — never let a failure
     // escape as an unhandled express error (raw stack trace to the client).

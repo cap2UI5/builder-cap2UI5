@@ -127,8 +127,16 @@ console.log(`  overlay webapp (from the core) → app/z2ui5/webapp: ${countFiles
 // inside core/ (same layout as a standalone install of the core) and the
 // app lock deterministic without a registry roundtrip.
 const appLockPath = path.join(dest, "package-lock.json");
-const appLock = JSON.parse(fs.readFileSync(appLockPath, "utf8"));
-const coreLock = JSON.parse(fs.readFileSync(path.join(coreSrc, "package-lock.json"), "utf8"));
+let appLock, coreLock;
+try {
+  appLock = JSON.parse(fs.readFileSync(appLockPath, "utf8"));
+  coreLock = JSON.parse(fs.readFileSync(path.join(coreSrc, "package-lock.json"), "utf8"));
+} catch (e) {
+  // Symmetry with the guarded parse in the validation block below — fail with
+  // a clear message instead of a raw stack trace.
+  console.error(`assemble: failed to read/parse a lockfile before the core-lock merge: ${e.message}`);
+  process.exit(1);
+}
 let merged = 0;
 for (const [key, entry] of Object.entries(coreLock.packages || {})) {
   if (!key.startsWith("node_modules/")) continue;
@@ -162,6 +170,28 @@ console.log(`  merge core lock → package-lock.json: ${merged} entries under co
   }
   if (!appLock.packages?.["core"]) problems.push(`lock has no "core" package entry`);
   if (merged === 0) problems.push("core lock merge produced 0 entries — empty/renamed core lock?");
+
+  // Stale core-lock drift guard — the biggest latent risk in this pipeline.
+  // The app lock's "core" entry is a FROZEN snapshot of the core's
+  // package.json, taken when src/package-lock.json was last regenerated.
+  // mirror_core does NOT refresh it, so if the mirrored core changed its own
+  // dependencies, the vendored core/node_modules/* entries merged above
+  // disagree with this frozen entry and `npm ci` in the app fails with an
+  // out-of-sync lock. Catch it here with an actionable message.
+  try {
+    const coreManifest = JSON.parse(fs.readFileSync(path.join(coreSrc, "package.json"), "utf8"));
+    const frozen = JSON.stringify(appLock.packages?.["core"]?.dependencies ?? {});
+    const actual = JSON.stringify(coreManifest.dependencies ?? {});
+    if (frozen !== actual) {
+      problems.push(
+        `core dependencies drifted from the frozen lock: the mirrored core declares ${actual} but ` +
+        `src/package-lock.json's "core" entry has ${frozen}. Run \`npm install\` in src/ to refresh the lock.`,
+      );
+    }
+  } catch (e) {
+    problems.push(`could not compare core dependencies for drift: ${e.message}`);
+  }
+
   if (problems.length) {
     console.error(`assemble: output validation FAILED —\n  - ${problems.join("\n  - ")}`);
     process.exit(1);
