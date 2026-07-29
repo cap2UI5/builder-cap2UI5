@@ -74,6 +74,18 @@ npm run build_cap     # assemble + publish
   (secret `ACTION_KEY_APP`; skipped with a warning when unset).
 - `test`: PR gate — assemble from the committed mirror + `npm ci` + jest.
 
+## History growth of the committed mirror — recorded policy
+
+`update_cap` commits the refreshed `run/input/core` mirror on every run,
+so bot commits accumulate nightly. Same trade-off and same policy as
+documented in builder-abap2UI5-js AGENTS.md ("History growth of the
+committed build trees"): the committed mirror stays (diff-reviewable,
+reproducible, no artifact storage), bot-commit history is disposable and
+may be squashed to a baseline by a maintainer when clone size becomes a
+nuisance, and nothing may ever resolve old commits of this repo —
+`UPSTREAM_HEAD` and `run/input/UPSTREAM_COMMIT` are change-detection
+tokens / upstream shas, not references into this repo's history.
+
 ## Rules
 
 - Never edit the cap2UI5 app repo directly — change `src/` here and

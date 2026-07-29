@@ -26,6 +26,7 @@ on:
 
 permissions:
   contents: write
+  issues: write # report-scheduled-failure opens an issue on a red nightly
 
 concurrency:
   group: update-cap
@@ -35,10 +36,10 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: main
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
       # the builder's own dev deps (jest for the script tests, run by `npm test`)
@@ -112,3 +113,6 @@ jobs:
             git push origin HEAD:main
             echo "published to cap2UI5/cap2UI5@main: $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"
           fi
+      - name: report scheduled failure as issue
+        if: failure() && github.event_name == 'schedule'
+        uses: abap2UI5/abap2UI5/.github/actions/report-scheduled-failure@main
