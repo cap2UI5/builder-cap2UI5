@@ -29,7 +29,7 @@ that push starts `update_cap`.
 | `run/input/core/` | mirror of builder-abap2UI5-js:`core/` (committed; upstream sha in `run/input/UPSTREAM_COMMIT`) | never — rewritten by `npm run mirror_core` |
 | `run/output/cap2UI5/` | the assembled app (gitignored staging; `node_modules` preserved across builds) | never |
 | `scripts/` | `mirror-core.js`, `assemble-cap.js`, `publish-cap.js` | yes |
-| `test/` | the builder's own jest tests (assemble rewrite/lock-merge/guardrails, against temp fixtures) — NOT published; the app's tests live in `src/test/` | yes |
+| `test/` | the builder's own jest tests (assemble rewrite/lock-merge/guardrails, publish target-verification/PRESERVE, mirror slot-vs-HEAD arbitration — all against temp fixtures) — NOT published; the app's tests live in `src/test/` | yes |
 | `UPSTREAM_HEAD` | trigger slot written by builder-abap2UI5-js | never by hand |
 
 ## Build & test
@@ -60,10 +60,13 @@ npm run build_cap     # assemble + publish
   published lock deterministic and offline (no registry roundtrip) and one
   `npm ci` at the app root installs everything.
 - `publish-cap.js` wipes the target except `node_modules`, `.git` and
-  `.github` — the app repo's workflows (`test`, `trigger_web`) are owned by
-  the app repo and survive every publish; **everything else there is
-  regenerated**, including README, devcontainer and AGENTS.md (all shipped
-  from `src/`).
+  `.github` — the app repo's workflows (`test`, `trigger_web`, `deploy-check`
+  and its `dependabot.yml`) are owned by the app repo and survive every
+  publish; **everything else there is regenerated**, including README,
+  devcontainer and AGENTS.md (all shipped from `src/`). Because it deletes
+  recursively, it refuses any target it cannot identify as the app repo (by
+  `package.json` name or git remote); `npm run publish -- --dry-run` reports
+  what it would do without touching anything.
 
 ## Workflows (.github/workflows)
 

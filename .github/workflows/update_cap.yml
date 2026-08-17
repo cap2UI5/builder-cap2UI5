@@ -41,9 +41,14 @@ jobs:
           ref: main
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
-          node-version: 22
+          # from src/.nvmrc — the app's own declared runtime, so the nightly
+          # and the published app can never disagree on the Node version
+          node-version-file: src/.nvmrc
       # the builder's own dev deps (jest for the script tests, run by `npm test`)
       - run: npm ci
+      # same gate the PR workflow applies — without it a lint error can ride a
+      # nightly all the way into the published app repo
+      - run: npm run lint
       - run: npm run mirror_core
       - run: npm run assemble
       # one install covers the app AND the vendored core (its deps are part

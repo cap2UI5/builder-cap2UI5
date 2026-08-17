@@ -27,9 +27,16 @@ const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 
-const UPSTREAM = "https://github.com/cap2UI5/builder-abap2UI5-js";
+// The clone source. MIRROR_UPSTREAM points it at a local repository so the
+// slot-vs-HEAD arbitration below can be exercised without network access
+// (test/mirror-core.test.js); production always uses the default.
+const UPSTREAM = process.env.MIRROR_UPSTREAM || "https://github.com/cap2UI5/builder-abap2UI5-js";
 
-const root = path.join(__dirname, "..");
+// repo root — overridable for the unit tests (test/mirror-core.test.js),
+// same mechanism as assemble-cap.js's ASSEMBLE_ROOT.
+const root = process.env.MIRROR_ROOT
+  ? path.resolve(process.env.MIRROR_ROOT)
+  : path.join(__dirname, "..");
 const inputDir = path.join(root, "run", "input");
 const dest = path.join(inputDir, "core");
 const tmp = path.join(root, ".mirror_tmp");
