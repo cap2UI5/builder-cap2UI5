@@ -54,14 +54,19 @@ const COPY_IGNORE = new Set(["node_modules", "gen", "resources", "mta_archives",
 // app lock places INSIDE the vendored core/ — see below.)
 const PRESERVE = new Set(["node_modules", ".core_node_modules.keep"]);
 
-function copyDir(from, to, topLevel) {
+// `ignore` is the set applied at EVERY level of this copy. For src/ that is
+// COPY_IGNORE (local build litter can appear at any depth). For the vendored
+// core it must be empty: those names are meaningful inside a package —
+// `resources/` in particular is an ordinary UI5 folder — and silently
+// dropping one would ship a broken core with no error anywhere.
+function copyDir(from, to, topLevel, ignore = COPY_IGNORE) {
   fs.mkdirSync(to, { recursive: true });
   for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
-    if (COPY_IGNORE.has(entry.name) || entry.name.endsWith(".sqlite") || entry.name.endsWith(".log")) continue;
+    if (ignore.has(entry.name) || entry.name.endsWith(".sqlite") || entry.name.endsWith(".log")) continue;
     const src = path.join(from, entry.name);
     const dst = path.join(to, entry.name);
     if (entry.isDirectory()) {
-      copyDir(src, dst, false);
+      copyDir(src, dst, false, ignore);
     } else if (topLevel && REWRITE.has(entry.name)) {
       let text = fs.readFileSync(src, "utf8");
       for (const [from_, to_] of REWRITES) text = text.split(from_).join(to_);
@@ -107,9 +112,13 @@ console.log(`src → run/output/cap2UI5 (source skeleton copied, core dep path r
 // core/node_modules install
 const coreDest = path.join(dest, "core");
 fs.rmSync(coreDest, { recursive: true, force: true });
-copyDir(coreSrc, coreDest, false);
+// NO_IGNORE: the core is a package, not a source folder — see copyDir.
+copyDir(coreSrc, coreDest, false, new Set());
+// Count BEFORE restoring the stash, otherwise the number is a walk over the
+// whole installed dependency tree rather than over the vendored core.
+const coreFiles = countFiles(coreDest);
 if (fs.existsSync(coreNmKeep)) fs.renameSync(coreNmKeep, coreNm);
-console.log(`  vendor core (from run/input/core) → core: ${countFiles(coreDest)} files`);
+console.log(`  vendor core (from run/input/core) → core: ${coreFiles} files`);
 
 const webappSrc = path.join(coreSrc, "app", "z2ui5", "webapp");
 if (!fs.existsSync(webappSrc)) {
@@ -159,10 +168,33 @@ console.log(`  merge core lock → package-lock.json: ${merged} entries under co
   if (pkg && pkg.dependencies?.abap2UI5 !== "file:./core") {
     problems.push(`package.json dependency abap2UI5 is "${pkg?.dependencies?.abap2UI5}", expected "file:./core"`);
   }
-  for (const f of ["package.json", "package-lock.json"]) {
-    if (fs.readFileSync(path.join(dest, f), "utf8").includes("run/input/core")) {
-      problems.push(`${f} still references run/input/core after rewrite`);
-    }
+  // Residual-string sweep over the ENTIRE published tree, not just the two
+  // rewritten manifests: the rewrite only touches top-level package.json /
+  // package-lock.json, so any other file that names the build-time core path
+  // (a nested manifest, a config, a doc) would ship pointing at a directory
+  // that does not exist in the app. Milliseconds over ~2k files.
+  {
+    const stale = [];
+    (function sweep(dir) {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (PRESERVE.has(e.name) || e.name === "node_modules") continue;
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) { sweep(p); continue; }
+        if (!/\.(json|js|cjs|mjs|md|ya?ml|cds|txt)$/i.test(e.name)) continue;
+        if (fs.readFileSync(p, "utf8").includes("run/input/core")) {
+          stale.push(path.relative(dest, p));
+        }
+      }
+    })(dest);
+    for (const f of stale) problems.push(`${f} still references run/input/core after rewrite`);
+  }
+  // npm lockfileVersion 1 has no `packages` map at all. Say so, rather than
+  // letting the checks below report a pile of confusing absences.
+  if (!appLock.packages) {
+    problems.push(
+      `package-lock.json has no "packages" map (lockfileVersion ` +
+      `${appLock.lockfileVersion ?? "?"}) — regenerate src/package-lock.json with npm >= 7`,
+    );
   }
   const linkEntry = appLock.packages?.["node_modules/abap2UI5"];
   if (!linkEntry || linkEntry.resolved !== "core") {
@@ -180,8 +212,12 @@ console.log(`  merge core lock → package-lock.json: ${merged} entries under co
   // out-of-sync lock. Catch it here with an actionable message.
   try {
     const coreManifest = JSON.parse(fs.readFileSync(path.join(coreSrc, "package.json"), "utf8"));
-    const frozen = JSON.stringify(appLock.packages?.["core"]?.dependencies ?? {});
-    const actual = JSON.stringify(coreManifest.dependencies ?? {});
+    // All three dependency kinds npm records in a lock entry — a change to
+    // optional/peer deps breaks `npm ci` exactly like a change to `dependencies`.
+    const KINDS = ["dependencies", "optionalDependencies", "peerDependencies"];
+    const pick = (o) => Object.fromEntries(KINDS.map((k) => [k, o?.[k] ?? {}]));
+    const frozen = JSON.stringify(pick(appLock.packages?.["core"]));
+    const actual = JSON.stringify(pick(coreManifest));
     if (frozen !== actual) {
       problems.push(
         `core dependencies drifted from the frozen lock: the mirrored core declares ${actual} but ` +
