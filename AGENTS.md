@@ -89,6 +89,14 @@ nuisance, and nothing may ever resolve old commits of this repo —
 `UPSTREAM_HEAD` and `run/input/UPSTREAM_COMMIT` are change-detection
 tokens / upstream shas, not references into this repo's history.
 
+The one place that *does* resolve a pin is `scripts/mirror-core.js`: it
+fetches the `UPSTREAM_HEAD` sha from builder-abap2UI5-js and compares
+committer dates against the freshly cloned HEAD. That stays within the
+upstream policy because it is **ordering arbitration only** — the pin is
+checked out solely when it is NEWER than HEAD (the fast-double-push race),
+never to build from an older commit, and an unfetchable pin warns and falls
+back to HEAD instead of failing. Keep both properties if you touch it.
+
 ## Rules
 
 - Never edit the cap2UI5 app repo directly — change `src/` here and
