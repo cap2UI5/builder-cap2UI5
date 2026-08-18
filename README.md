@@ -22,13 +22,18 @@ in [`src/`](src/) plus the published core package (the npm package
 > `src/srv/app/` or an external `Z2UI5_APP_DIRS` folder — never in the app
 > repo's `srv/app/`, which is regenerated.)
 
-cap2UI5 is organized as three repositories, from framework to finished app:
+cap2UI5 is organized as six repositories, from framework to finished app:
 
 | Repository | What it is |
 |---|---|
 | [`builder-abap2UI5-js`](https://github.com/cap2UI5/builder-abap2UI5-js) | abap2UI5 ported to JavaScript — generates the core package `abap2UI5` |
 | [`builder-cap2UI5`](https://github.com/cap2UI5/builder-cap2UI5) (here) | generates the full CAP app from `src/` + the published core |
 | [`cap2UI5`](https://github.com/cap2UI5/cap2UI5) | the finished, deployable CAP app (**generated**) |
+| [`builder-cap2UI5-web`](https://github.com/cap2UI5/builder-cap2UI5-web) | browser build tooling — bundles the app into a static site |
+| [`web-cap2UI5-build`](https://github.com/cap2UI5/web-cap2UI5-build) | the built static site (**generated**), served via GitHub Pages |
+| [`docs`](https://github.com/cap2UI5/docs) | the VitePress documentation site |
+
+The full documentation lives in [cap2UI5/docs](https://github.com/cap2UI5/docs).
 
 ## Build
 
