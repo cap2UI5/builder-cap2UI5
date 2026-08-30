@@ -107,6 +107,19 @@ back to HEAD instead of failing. Keep both properties if you touch it.
 - Keep the rewrite pairs in `assemble-cap.js` in sync with the dependency
   paths if you ever move `run/input/core` or the vendored `core/`.
 - The app's jest suite gates every publish; keep it green.
+- A change to the CORE's own dependencies needs a coordinated refresh here:
+  `mirror_core` does not touch the frozen `"core"` entry in
+  `src/package-lock.json`, so assemble's drift guard fails the build until
+  someone runs `npm install` in `src/` in the same change set. That is the
+  guard working, not a bug — the merged `core/node_modules/*` entries and
+  the frozen entry have to agree or the app's `npm ci` breaks. Land the
+  mirror and the refreshed lock together.
+- The app carries `openui5-dist` as its own devDependency. The core stopped
+  declaring it as a runtime dependency (optional peer instead — see
+  builder-abap2UI5-js:AGENTS.md, "The UI5 runtime pin"), so this is what
+  keeps `cds watch` serving `/resources` locally. It must stay a
+  devDependency: production gets UI5 from the `ui5` destination, and the
+  package is 611 MB of deprecated tooling.
 - App dependency updates belong in `src/package.json` + `src/package-lock.json`
   and nowhere else. The app repo is regenerated on every publish, so a bump
   merged there is reverted by the next nightly — it happened to

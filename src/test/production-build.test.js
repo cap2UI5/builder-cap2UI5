@@ -84,9 +84,20 @@ describe("cds build --production stages a startable server module", () => {
     // manifest and lock have to agree or `npm ci` refuses the tree
     expect(lock.packages["core"].dependencies).toBeUndefined();
 
-    // …and the app root still has it, so local development is unchanged
-    const app = JSON.parse(fs.readFileSync(path.join(ROOT, "core", "package.json"), "utf8"));
-    expect(app.dependencies["openui5-dist"]).toBeDefined();
+    // …while local development still gets it, so `cds watch` keeps serving
+    // /resources. Which side declares it depends on the core in the mirror:
+    // the app names it in devDependencies, and older cores also carried it as
+    // a runtime dependency of their own. Either satisfies local development;
+    // asserting the property rather than one of its two shapes keeps this
+    // test honest across the mirror update that drops the core's copy.
+    const app = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+    const core = JSON.parse(fs.readFileSync(path.join(ROOT, "core", "package.json"), "utf8"));
+    const declaredForDev =
+      (app.devDependencies && app.devDependencies["openui5-dist"]) ||
+      (core.dependencies && core.dependencies["openui5-dist"]);
+    expect(declaredForDev).toBeDefined();
+    // it must never be a production dependency of the app, whoever declares it
+    expect(app.dependencies["openui5-dist"]).toBeUndefined();
   });
 
   test("mta.yaml runs the build that includes the vendor step", () => {

@@ -21,6 +21,7 @@
     "@sap/cds-dk": "^10",
     "jest": "^30",
     "mbt": "^1.2.34",
+    "openui5-dist": "1.113.0",
     "rimraf": "^6"
   },
   "scripts": {

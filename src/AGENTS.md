@@ -44,11 +44,14 @@ because `npm ci` does not check symlink targets and `cds build` exits 0.
 `mta.yaml`'s `before-all` runs the pair, `test/production-build.test.js`
 gates it, and `deploy-check.yml` installs and loads the staged module.
 
-The same step drops `openui5-dist` from the staged tree. It is the UI5
-runtime `cds watch` serves at `/resources` locally; on BTP `/resources` is
-routed to the `ui5` destination, so the deployed server never serves it —
-and shipping it cost 611 MB and 43 advisories (3 critical) of release
-tooling. Staged tree today: 19 MB, 0 advisories.
+`openui5-dist` — the UI5 runtime `cds watch` serves at `/resources` — is a
+devDependency of this app, not a dependency of the framework: on BTP
+`/resources` is routed to the `ui5` destination, so the deployed server never
+serves it, and the package is 611 MB of deprecated release tooling that
+carried 43 advisories (3 critical). `npm ci --omit=dev` in the staged module
+therefore leaves it out; the vendor step additionally prunes it from the
+staged tree if a core that still declares it comes through the mirror.
+Staged tree today: 19 MB, 0 advisories.
 
 ## Run & test
 

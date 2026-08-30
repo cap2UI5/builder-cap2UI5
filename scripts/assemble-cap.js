@@ -201,7 +201,25 @@ console.log(`  merge core lock → package-lock.json: ${merged} entries under co
     problems.push(`lock entry node_modules/abap2UI5 does not link "core" (got ${JSON.stringify(linkEntry?.resolved)})`);
   }
   if (!appLock.packages?.["core"]) problems.push(`lock has no "core" package entry`);
-  if (merged === 0) problems.push("core lock merge produced 0 entries — empty/renamed core lock?");
+  // Nothing merged is a defect only when there was something TO merge — an
+  // empty or renamed core lock. A core with no dependencies of its own
+  // legitimately contributes nothing: since the UI5 runtime became an
+  // optional peer dependency (see builder-abap2UI5-js:AGENTS.md, "The UI5
+  // runtime pin"), the core declares none, its lock is the root entry alone,
+  // and 0 is the right answer rather than a symptom.
+  // (declared below and reused by the drift guard that follows)
+  let coreManifest;
+  try {
+    coreManifest = JSON.parse(fs.readFileSync(path.join(coreSrc, "package.json"), "utf8"));
+  } catch (e) {
+    problems.push(`run/input/core/package.json is not valid JSON: ${e.message}`);
+  }
+  if (merged === 0 && Object.keys(coreManifest?.dependencies || {}).length > 0) {
+    problems.push(
+      `core lock merge produced 0 entries although the core declares ` +
+      `${Object.keys(coreManifest.dependencies).join(", ")} — empty/renamed core lock?`,
+    );
+  }
 
   // Stale core-lock drift guard — the biggest latent risk in this pipeline.
   // The app lock's "core" entry is a FROZEN snapshot of the core's
@@ -210,8 +228,7 @@ console.log(`  merge core lock → package-lock.json: ${merged} entries under co
   // dependencies, the vendored core/node_modules/* entries merged above
   // disagree with this frozen entry and `npm ci` in the app fails with an
   // out-of-sync lock. Catch it here with an actionable message.
-  try {
-    const coreManifest = JSON.parse(fs.readFileSync(path.join(coreSrc, "package.json"), "utf8"));
+  if (coreManifest) {
     // All three dependency kinds npm records in a lock entry — a change to
     // optional/peer deps breaks `npm ci` exactly like a change to `dependencies`.
     const KINDS = ["dependencies", "optionalDependencies", "peerDependencies"];
@@ -224,8 +241,6 @@ console.log(`  merge core lock → package-lock.json: ${merged} entries under co
         `src/package-lock.json's "core" entry has ${frozen}. Run \`npm install\` in src/ to refresh the lock.`,
       );
     }
-  } catch (e) {
-    problems.push(`could not compare core dependencies for drift: ${e.message}`);
   }
 
   if (problems.length) {

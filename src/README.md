@@ -127,10 +127,13 @@ wires to CAP: the draft store port to the CDS entity `cap2ui5.z2ui5_t_01`,
 the app-discovery port to this project's `srv/app/`.
 
 There is nothing to configure: the UI5 runtime is served locally from the
-pinned `openui5-dist` dependency (works offline) and CAP deploys an
+pinned `openui5-dist` devDependency (works offline) and CAP deploys an
 in-memory SQLite database automatically on startup. On BTP that package is
 not deployed — the approuter routes `/resources` to the `ui5` destination,
-and `npm run build:production` leaves it out of the pushed module.
+so `npm ci --omit=dev` in the pushed module leaves it out. In your own
+project the same applies: the framework declares it as an *optional peer*
+dependency, so install it if you want the local runtime and skip it if you
+bootstrap UI5 from a CDN.
 
 ### Start it
 
