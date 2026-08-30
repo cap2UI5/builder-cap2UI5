@@ -422,6 +422,33 @@ class z2ui5_cl_ui5_client {
   }
 
   /**
+   * The `result IS SUPPLIED` branch of abap follow_up_action — the SAME wire
+   * string the statement form would queue, rendered and handed back instead.
+   *
+   * Upstream is one method with two behaviours:
+   *
+   *     IF result IS SUPPLIED.
+   *       result = mo_srv_event->get_event_client( … ).   " queue NOTHING
+   *       RETURN.
+   *     ENDIF.
+   *     … queue …
+   *
+   * JS cannot see whether a caller consumes a return value, so this is split
+   * in two and the transpiler picks: an assignment RHS becomes this method
+   * (RESULT_SUPPLIED_FORMS in scripts/abap2js.js), a bare call stays
+   * follow_up_action. Merging them would queue the action of every consumed
+   * call too — sample 000 builds a `press` attribute this way, and the
+   * REDIRECT it renders would fire as the gallery loads.
+   */
+  follow_up_action_result(val, t_arg, view) {
+    if (val !== null && typeof val === `object` && `val` in val) ({ val, t_arg, view } = val);
+    if (this.mo_action) {
+      return this.mo_srv_event.get_event_client({ val: val ?? ``, view, t_arg: t_arg ?? [] });
+    }
+    return z2ui5_cl_ui5_srv_event.get_event_client(val ?? ``, t_arg ?? []);
+  }
+
+  /**
    * Mirrors abap `client->action->gen( val = <cs_event-...> t_arg = [...] )` —
    * generates the `.eF([...])` follow-up action for a frontend event.
    * Transpiled apps call this as `client.action.gen({ val, t_arg })`.
@@ -715,6 +742,11 @@ class z2ui5_cl_ui5_client {
         CHECK_LEAVE: this._navStack.length > 0,
       },
       R_EVENT_DATA: sFront.R_EVENT_DATA || null,
+      // Cells this roundtrip's delta refused — {name, row, field} each, filled
+      // by z2ui5_cl_ui5_srv_model.delta_apply_field. Reading it pushes no
+      // model, so the browser goes on showing the refused text until the app
+      // writes something; that is the point, the app decides what to say.
+      T_MODEL_SKIPPED: this.mo_action?.ms_actual?.t_model_skipped || [],
     };
   }
 

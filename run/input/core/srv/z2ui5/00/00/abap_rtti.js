@@ -118,7 +118,13 @@ function describe(val) {
     return makeElem(TYPEKIND.date, "\\TYPE=D", 8);
   }
   if (typeof val === "object" && (val.constructor === Object || !val.constructor)) {
-    const components = Object.entries(val).map(([name, v]) => ({ name, type: describe(v) }));
+    // ABAP RTTI reports component names in UPPER CASE, and transpiled code
+    // reads them as such — `CASE ls_attri->name. WHEN 'PREVIOUS'.` — or hands
+    // them straight to the user, which is what msg_get_rap_flatten does:
+    // reporting the JS key verbatim produced `product_uuid=ABC-1` where the
+    // RAP key is PRODUCT_UUID. Lookups are unaffected: the ASSIGN COMPONENT
+    // accessor the transpiler emits lower-cases the name before resolving it.
+    const components = Object.entries(val).map(([name, v]) => ({ name: name.toUpperCase(), type: describe(v) }));
     return makeStruct(components);
   }
   if (typeof val === "function") {
@@ -128,7 +134,8 @@ function describe(val) {
     });
   }
   // class instance
-  const attributes = Object.getOwnPropertyNames(val).map((name) => ({ name, type_kind: describe(val[name]).type_kind }));
+  // …same for a class instance's attributes (see the struct branch above)
+  const attributes = Object.getOwnPropertyNames(val).map((name) => ({ name: name.toUpperCase(), type_kind: describe(val[name]).type_kind }));
   const proto = Object.getPrototypeOf(val) || {};
   const methods = Object.getOwnPropertyNames(proto)
     .filter((m) => m !== "constructor" && typeof proto[m] === "function")

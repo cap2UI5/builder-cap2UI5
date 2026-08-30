@@ -53,8 +53,13 @@
     "./z2ui5_port": "./srv/z2ui5/z2ui5_port.js",
     "./register-apps": "./srv/z2ui5/register-apps.js"
   },
-  "dependencies": {
+  "peerDependencies": {
     "openui5-dist": "1.113.0"
+  },
+  "peerDependenciesMeta": {
+    "openui5-dist": {
+      "optional": true
+    }
   },
   "types": "./types/index.d.ts"
 }

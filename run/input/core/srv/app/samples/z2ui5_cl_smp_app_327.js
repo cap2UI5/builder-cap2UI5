@@ -101,7 +101,7 @@ class z2ui5_cl_smp_app_327 extends z2ui5_if_app {
       .tag(`Label`)
       .a({ n: `text`, v: `` })
       .tag(`Button`)
-      .a({ n: `press`, v: this.client.follow_up_action(z2ui5_if_client.cs_event.store_data, [`$${this.client._bind(this.s_storage)}`]) })
+      .a({ n: `press`, v: this.client.follow_up_action_result(z2ui5_if_client.cs_event.store_data, [`$${this.client._bind(this.s_storage)}`]) })
       .a({ n: `text`, v: `store` })
       .tag(`Button`)
       .a({ n: `press`, v: this.client._event(`GET_STORED_VALUE`) })

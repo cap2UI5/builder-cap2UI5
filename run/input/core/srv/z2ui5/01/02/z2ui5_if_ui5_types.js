@@ -93,6 +93,10 @@ const z2ui5_if_ui5_types = Object.freeze({
       s_draft: z2ui5_if_ui5_types.ty_s_draft(),
       s_config: { origin: ``, pathname: ``, search: `` },
       r_data: null,
+      // cells the incoming delta could not apply — see
+      // z2ui5_cl_ui5_srv_model.mt_skipped; belongs to THIS roundtrip and is
+      // rebuilt on the next one
+      t_model_skipped: [],
     };
   },
 

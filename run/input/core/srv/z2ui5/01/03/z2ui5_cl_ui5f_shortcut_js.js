@@ -7,21 +7,8 @@ class z2ui5_cl_ui5f_shortcut_js {
 ` + `  (Lib, ViewSlots, AppState) => {` + `
 ` + `    "use strict";` + `
 ` + `` + `
-` + `    // ------------------------------------------------------------------` + `
-` + `    // KEYBOARD_SHORTCUT: bind a key combination to a NAMED BACKEND EVENT -` + `
-` + `    // the declarative equivalent of a sap.ui.core.CommandExecution shortcut` + `
-` + `    // (which needs a controller method and therefore has no place in a` + `
-` + `    // controller-less app). The backend registers "combo -> event" pairs as` + `
-` + `    // data; the document listener below is installed once and always reads` + `
-` + `    // the CURRENT registry, so an app switch (which resets AppState) starts` + `
-` + `    // from an empty set without touching the listener.` + `
-` + `    // ------------------------------------------------------------------` + `
-` + `` + `
-` + `    // in the order they are emitted into a normalized combo, so registration` + `
-` + `    // and keydown produce the same string for any spelling` + `
 ` + `    const SHORTCUT_MODIFIERS = ["ctrl", "shift", "alt", "meta"];` + `
 ` + `` + `
-` + `    // spellings apps/UI5 use for the same modifier or key` + `
 ` + `    const SHORTCUT_ALIASES = {` + `
 ` + `      control: "ctrl",` + `
 ` + `      cmd: "meta",` + `
@@ -39,8 +26,6 @@ class z2ui5_cl_ui5f_shortcut_js {
 ` + `      return SHORTCUT_ALIASES[t] ?? t;` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // "Ctrl+Shift+S" / "shift + CTRL + s" -> "ctrl+shift+s". Returns an empty` + `
-` + `    // string when no actual key (only modifiers) is named.` + `
 ` + `    function normalizeShortcut(combo) {` + `
 ` + `      const parts = String(combo ?? "")` + `
 ` + `        .split("+")` + `
@@ -52,10 +37,9 @@ class z2ui5_cl_ui5f_shortcut_js {
 ` + `      return [...mods, keys[keys.length - 1]].join("+");` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // the same normalized form for an actual keydown event` + `
 ` + `    function shortcutFromEvent(oEvent) {` + `
 ` + `      const key = String(oEvent.key ?? "").toLowerCase();` + `
-` + `      // a bare modifier press is not a shortcut` + `
+` + `` + `
 ` + `      if (key === "" || SHORTCUT_MODIFIERS.includes(shortcutToken(key)))` + `
 ` + `        return "";` + `
 ` + `      const mods = [];` + `
@@ -66,27 +50,10 @@ class z2ui5_cl_ui5f_shortcut_js {
 ` + `      return [...mods, key].join("+");` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // A shortcut may be SCOPED, which is how UI5's own CommandExecution` + `
-` + `    // behaves: one in a Popover's dependents shadows the page-level one for` + `
-` + `    // the same command while that popover is open. A scope is either` + `
-` + `    //` + `
-` + `    //   a VIEW SLOT   - POPOVER/POPUP/NEST2/NEST/MAIN, open when the framework` + `
-` + `    //                   has that slot showing (popover_display, popup_display,` + `
-` + `    //                   a nested view)` + `
-` + `    //   a CONTROL ID  - any control DECLARED IN THE VIEW that can be open or` + `
-` + `    //                   closed: a sap.m.Popover/Dialog in \`dependents\` opened` + `
-` + `    //                   with control_by_id openBy, which is the shape the demo` + `
-` + `    //                   kit's Commands sample actually uses. It never enters a` + `
-` + `    //                   framework slot, so the slot form alone would never fire.` + `
-` + `    //` + `
-` + `    // Dispatch prefers a CONTROL scope (the more specific statement) over a` + `
-` + `    // slot scope, then takes the innermost open slot, then the unscoped entry.` + `
 ` + `    const SHORTCUT_SLOTS = ["POPOVER", "POPUP", "NEST2", "NEST", "MAIN"];` + `
 ` + `` + `
-` + `    const SHORTCUT_GLOBAL = ""; // the unscoped registration` + `
+` + `    const SHORTCUT_GLOBAL = "";` + `
 ` + `` + `
-` + `    // A control scope counts while the control is OPEN - isOpen() for the` + `
-` + `    // popup-like controls this is for, visibility otherwise.` + `
 ` + `    function scopeControlOpen(id) {` + `
 ` + `      const c = ViewSlots.resolveById(id);` + `
 ` + `      if (!c) return false;` + `
@@ -117,8 +84,9 @@ class z2ui5_cl_ui5f_shortcut_js {
 ` + `        try {` + `
 ` + `          const entry = shortcutEntry(shortcutFromEvent(oEvent));` + `
 ` + `          if (!entry) return;` + `
-` + `          // the browser's own default for the combo (Ctrl+S saves the page,` + `
-` + `          // Ctrl+D bookmarks it) must not fire alongside the app command` + `
+` + `` + `
+` + `          if (Lib.isDestroyed(entry.controller)) return;` + `
+` + `` + `
 ` + `          oEvent.preventDefault();` + `
 ` + `          entry.controller.eB([entry.event]);` + `
 ` + `        } catch (e) {` + `
@@ -128,9 +96,6 @@ class z2ui5_cl_ui5f_shortcut_js {
 ` + `      document.addEventListener("keydown", shortcutListener);` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // args: [_, combo, eventName, scope] - an empty event name unregisters the` + `
-` + `    // combo IN THAT SCOPE; scope is a view slot key (cs_view-popover/popup/...)` + `
-` + `    // and defaults to the unscoped, always-eligible registration` + `
 ` + `    function evKeyboardShortcut(oController, args) {` + `
 ` + `      const combo = normalizeShortcut(args[1]);` + `
 ` + `      if (!combo) {` + `
@@ -139,8 +104,7 @@ class z2ui5_cl_ui5f_shortcut_js {
 ` + `        );` + `
 ` + `        return;` + `
 ` + `      }` + `
-` + `      // a slot key is matched case-insensitively; anything else is taken as a` + `
-` + `      // control id and keeps its case, because that is how it must resolve` + `
+` + `` + `
 ` + `      const raw = String(args[3] ?? "");` + `
 ` + `      const scope = SHORTCUT_SLOTS.includes(raw.toUpperCase())` + `
 ` + `        ? raw.toUpperCase()` + `
@@ -149,22 +113,22 @@ class z2ui5_cl_ui5f_shortcut_js {
 ` + `      const scopes = shortcuts[combo] ?? (shortcuts[combo] = {});` + `
 ` + `      if (!args[2]) {` + `
 ` + `        delete scopes[scope];` + `
-` + `        // a combo with no registration left must not keep an empty entry:` + `
-` + `        // shortcutEntry would still find it and fall through to undefined,` + `
-` + `        // but preventDefault has already been decided by then` + `
+` + `` + `
 ` + `        if (Object.keys(scopes).length === 0) delete shortcuts[combo];` + `
 ` + `        return;` + `
 ` + `      }` + `
-` + `      // re-registering a combo in the same scope replaces it, so the backend` + `
-` + `      // can rebind a shortcut without unregistering it first` + `
+` + `` + `
 ` + `      scopes[scope] = { event: args[2], controller: oController };` + `
 ` + `      installShortcutListener();` + `
 ` + `    }` + `
 ` + `` + `
 ` + `    function evKeyboardSetMode(oController, args) {` + `
 ` + `      try {` + `
-` + `        const oElement = ViewSlots.byId("MAIN", args[1]);` + `
-` + `        if (!oElement) return;` + `
+` + `        const oElement = ViewSlots.resolveById(args[1]);` + `
+` + `        if (!oElement) {` + `
+` + `          Lib.logError(\`KEYBOARD_SET_MODE: '\${args[1]}' not found\`);` + `
+` + `          return;` + `
+` + `        }` + `
 ` + `        const dom = oElement.getDomRef();` + `
 ` + `        if (!dom) return;` + `
 ` + `        const input = dom.matches("input, textarea")` + `
@@ -180,8 +144,6 @@ class z2ui5_cl_ui5f_shortcut_js {
 ` + `      }` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // The events this module owns in the eF dispatch (see` + `
-` + `    // core/FrontendAction.js, which merges the domain modules' handler maps).` + `
 ` + `    const handlers = {` + `
 ` + `      KEYBOARD_SHORTCUT: evKeyboardShortcut,` + `
 ` + `      KEYBOARD_SET_MODE: evKeyboardSetMode,` + `

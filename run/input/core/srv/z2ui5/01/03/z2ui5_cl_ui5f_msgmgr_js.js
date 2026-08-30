@@ -12,28 +12,12 @@ class z2ui5_cl_ui5f_msgmgr_js {
 ` + `  (Control, Message, Lib, ViewSlots) => {` + `
 ` + `    "use strict";` + `
 ` + `` + `
-` + `    // A message key that is stable across a round-trip: two rows describing` + `
-` + `    // the same problem (same text, type and target) map to the same key, so` + `
-` + `    // reconciling never adds a duplicate or drops a still-wanted message.` + `
-` + `    // Joined with a control char (0x01) that cannot occur in message` + `
-` + `    // text/type/target, so distinct rows never collide into one key. Built` + `
-` + `    // via fromCharCode so the separator stays visible in the source (a raw` + `
-` + `    // control-char literal is invisible and easily mangled by tooling).` + `
 ` + `    const KEY_SEP = String.fromCharCode(1);` + `
 ` + `    const keyOf = (o) =>` + `
 ` + `      [o.MESSAGE ?? o.message, o.TYPE ?? o.type, o.TARGET ?? o.target].join(` + `
 ` + `        KEY_SEP,` + `
 ` + `      );` + `
 ` + `` + `
-` + `    // Invisible companion control that bridges the UI5 message manager to a` + `
-` + `    // bound ABAP table (\`items\`). The table is the app's OWN messages:` + `
-` + `    // on every backend update the control reconciles the message manager to` + `
-` + `    // match it - adding new rows as sap.ui.core.message.Message objects (with` + `
-` + `    // a target + the view's model as processor, so they set the bound field's` + `
-` + `    // valueState) and removing the app rows that are gone. Messages the` + `
-` + `    // framework auto-collects from binding-type/constraint validation stay in` + `
-` + `    // the message> model untouched; a MessagePopover bound to {message>/}` + `
-` + `    // shows both. Mirrors the MultiInputExt companion-control pattern.` + `
 ` + `    return Control.extend("z2ui5.cc.MessageManager", {` + `
 ` + `      metadata: {` + `
 ` + `        properties: {` + `
@@ -46,23 +30,19 @@ class z2ui5_cl_ui5f_msgmgr_js {
 ` + `      },` + `
 ` + `` + `
 ` + `      init() {` + `
-` + `        // Messages this control has added, by key, so it removes exactly its` + `
-` + `        // own rows and never touches auto-collected validation messages.` + `
 ` + `        this._added = new Map();` + `
 ` + `        this._ready = false;` + `
-` + `        this._setupBound = this.setup.bind(this);` + `
-` + `        Lib.registerCallback("onAfterRendering", this._setupBound);` + `
+` + `        this._unhook = Lib.hookCallback(this, "onAfterRendering", "setup");` + `
 ` + `      },` + `
 ` + `      exit() {` + `
-` + `        Lib.unregisterCallback("onAfterRendering", this._setupBound);` + `
-` + `        // remove this control's own rows from the message model, otherwise a` + `
-` + `        // full view rebuild leaves them behind and re-adds a duplicate set` + `
+` + `        this._unhook();` + `
+` + `` + `
 ` + `        if (this._added.size && this._messaging) {` + `
 ` + `          this._messaging.removeMessages([...this._added.values()]);` + `
 ` + `        }` + `
 ` + `        this._added.clear();` + `
 ` + `      },` + `
-` + `      renderer: { apiVersion: 2, render() {} },` + `
+` + `      renderer: Lib.EMPTY_RENDERER,` + `
 ` + `` + `
 ` + `      setup() {` + `
 ` + `        if (this.getProperty("checkInit")) return;` + `
@@ -75,33 +55,22 @@ class z2ui5_cl_ui5f_msgmgr_js {
 ` + `        );` + `
 ` + `        this._processor = view?.getModel?.() ?? null;` + `
 ` + `        this._ready = true;` + `
-` + `        // reconcile whatever arrived before the control was ready` + `
+` + `` + `
 ` + `        this.reconcile();` + `
 ` + `      },` + `
 ` + `` + `
-` + `      // property setter override: the binding calls this when the` + `
-` + `      // backend ships a new message table (base setProperty is used for the` + `
-` + `      // internal store, so it never re-enters here)` + `
 ` + `      setItems(aItems) {` + `
 ` + `        this.setProperty("items", aItems, true);` + `
 ` + `        if (this._ready) this.reconcile();` + `
 ` + `        return this;` + `
 ` + `      },` + `
 ` + `` + `
-` + `      // Bring the message manager in line with the \`items\` table: add rows` + `
-` + `      // that are not yet present, remove the control's own rows that are gone.` + `
 ` + `      reconcile() {` + `
 ` + `        const rows = this.getProperty("items") || [];` + `
 ` + `        const wanted = new Map(rows.map((r) => [keyOf(r), r]));` + `
-` + `        // \`change\` reports an actual message update, so it only fires when` + `
-` + `        // this pass added or removed something. Firing unconditionally made` + `
-` + `        // every model update (the table is bound, so it arrives on` + `
-` + `        // each roundtrip) look like a change - and an app that binds the` + `
-` + `        // event to a backend roundtrip would answer with the next model` + `
-` + `        // update, i.e. loop.` + `
+` + `` + `
 ` + `        let changed = false;` + `
 ` + `` + `
-` + `        // remove app rows no longer wanted` + `
 ` + `        for (const [key, oMessage] of this._added) {` + `
 ` + `          if (!wanted.has(key)) {` + `
 ` + `            this._messaging.removeMessages(oMessage);` + `
@@ -109,7 +78,7 @@ class z2ui5_cl_ui5f_msgmgr_js {
 ` + `            changed = true;` + `
 ` + `          }` + `
 ` + `        }` + `
-` + `        // add newly wanted rows` + `
+` + `` + `
 ` + `        for (const [key, r] of wanted) {` + `
 ` + `          if (this._added.has(key)) continue;` + `
 ` + `          changed = true;` + `
@@ -119,10 +88,7 @@ class z2ui5_cl_ui5f_msgmgr_js {
 ` + `            type: r.TYPE ?? "Error",` + `
 ` + `            target: r.TARGET ?? "",` + `
 ` + `            additionalText: r.ADDITIONALTEXT ?? "",` + `
-` + `            // a free string column the app fills server-side (e.g. a display` + `
-` + `            // group for MessageItem.groupName - sap.ui.core.message.Message has` + `
-` + `            // no groupName slot, so grouping stays a backend decision bound to` + `
-` + `            // {message>code} rather than a frontend expression)` + `
+` + `` + `
 ` + `            code: r.CODE ?? "",` + `
 ` + `            processor: this._processor,` + `
 ` + `          });` + `

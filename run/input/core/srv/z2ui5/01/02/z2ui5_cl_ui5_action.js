@@ -118,7 +118,9 @@ class z2ui5_cl_ui5_action {
     result.ms_actual.view          = req?.s_front?.view || ``;
 
     if (req?.o_model && typeof req.o_model.is_empty === `function` && req.o_model.is_empty() !== true) {
-      result.mo_app.model_json_parse(req?.s_front?.view || ``, req.o_model);
+      // the cells the delta could not apply travel with the roundtrip, so
+      // the app can name the field that was refused (client->get()-t_model_skipped)
+      result.ms_actual.t_model_skipped = result.mo_app.model_json_parse(req?.s_front?.view || ``, req.o_model) || [];
     }
 
     result.ms_actual.event       = req?.s_front?.event || ``;

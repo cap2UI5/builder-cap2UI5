@@ -2,72 +2,22 @@
 class z2ui5_cl_ui5f_console_js {
   static get() {
     let result = ``;
-    result = `// Console capture of the developer tools.` + `
-` + `//` + `
-` + `// Brings into the app what you would otherwise have to open the browser's` + `
-` + `// own devtools for. On a locked-down desktop, on a tablet, or in a` + `
-` + `// customer's system where F12 is not an option, that difference is the` + `
-` + `// difference between diagnosing a problem and not.` + `
-` + `//` + `
-` + `// Three sources, in increasing order of invasiveness:` + `
-` + `//` + `
-` + `//  1. UI5's own log (sap/base/Log). An OFFICIAL listener API - nothing is` + `
-` + `//     patched. This is where the messages live that explain most broken` + `
-` + `//     views: unresolved binding paths, unknown aggregations, controls that` + `
-` + `//     could not be found, deprecated API warnings.` + `
-` + `//` + `
-` + `//  2. Uncaught errors and unhandled promise rejections (window listeners).` + `
-` + `//     Also non-invasive, and the one class of failure that leaves no trace` + `
-` + `//     anywhere else in the app.` + `
-` + `//` + `
-` + `//  3. console.log / info / warn / error / debug. This one DOES replace the` + `
-` + `//     console methods. The originals are kept and always called through, so` + `
-` + `//     the browser console keeps working exactly as before and uninstall()` + `
-` + `//     puts them back. The one visible cost is that the browser console's` + `
-` + `//     source link then points at this file instead of the calling line -` + `
-` + `//     see the note on install().` + `
-` + `//` + `
-` + `// Like the rest of devtools/ this module is outside the framework: no` + `
-` + `// framework module knows it exists, and devtools/DevTools.js is what` + `
-` + `// installs it. It depends on nothing at all - not even on the rest of` + `
-` + `// devtools/: it observes the browser and UI5 and hands the captured` + `
-` + `// entries over as DATA. Rendering them is devtools/Inspect.js's job,` + `
-` + `// which merges them with the framework's error log and the backend` + `
-` + `// messages into one timeline (the Log tab).` + `
-` + `sap.ui.define([], () => {` + `
+    result = `sap.ui.define([], () => {` + `
 ` + `  "use strict";` + `
 ` + `` + `
-` + `  // Ring size. Console output is far chattier than the roundtrip history,` + `
-` + `  // so this is bigger - but every entry is a short string, which keeps the` + `
-` + `  // whole buffer in the same order of magnitude as the error log.` + `
 ` + `  const MAX_ENTRIES = 300;` + `
 ` + `` + `
-` + `  // Per-entry cap. A single console.log of a large table would otherwise` + `
-` + `  // put megabytes into the ring.` + `
 ` + `  const MAX_TEXT_CHARS = 2000;` + `
 ` + `` + `
-` + `  // Depth at which an argument stops being expanded.` + `
 ` + `  const MAX_DEPTH = 4;` + `
 ` + `` + `
-` + `  // sessionStorage key of the entries carried across a page reload, and` + `
-` + `  // how many travel. Only ERROR level: an app that died and was reloaded` + `
-` + `  // throws away exactly the evidence you need, and the errors are the` + `
-` + `  // part of it worth the storage.` + `
 ` + `  const RELOAD_KEY = "z2ui5.devtools.console";` + `
 ` + `  const RELOAD_MAX_ENTRIES = 40;` + `
 ` + `` + `
-` + `  // Opt-in: announce an error-level entry to whoever subscribed via` + `
-` + `  // setOnError. The developer tools turn that into "open on the Console` + `
-` + `  // tab"; the setting lives HERE because this is where the errors are, and` + `
-` + `  // because the dialog and the lifecycle facade both need to reach it` + `
-` + `  // without importing each other.` + `
 ` + `  const ALERT_KEY = "z2ui5.devtools.openOnError";` + `
 ` + `` + `
-` + `  // The console methods that are captured. Kept as a list so uninstall()` + `
-` + `  // restores exactly what install() replaced.` + `
 ` + `  const METHODS = ["log", "info", "warn", "error", "debug"];` + `
 ` + `` + `
-` + `  // Oldest first: { ts, level, source, text }.` + `
 ` + `  let entries = [];` + `
 ` + `  let dropped = 0;` + `
 ` + `` + `
@@ -78,14 +28,8 @@ class z2ui5_cl_ui5f_console_js {
 ` + `  let onRejection = null;` + `
 ` + `  let onPageHide = null;` + `
 ` + `` + `
-` + `  // Optional notification of an error-level entry, used by` + `
-` + `  // devtools/DevTools.js for its "open on error" option. One` + `
-` + `  // subscriber is enough - the tools are the only consumer.` + `
 ` + `  let onErrorEntry = null;` + `
 ` + `` + `
-` + `  // Re-entrancy guard: formatting an argument must never end up calling a` + `
-` + `  // captured console method again (a getter that logs, a toJSON that` + `
-` + `  // warns). One flag is enough - capture is synchronous.` + `
 ` + `  let capturing = false;` + `
 ` + `` + `
 ` + `  function push(level, source, text) {` + `
@@ -107,9 +51,7 @@ class z2ui5_cl_ui5f_console_js {
 ` + `    if (level === "error" && onErrorEntry && isAlertOnError()) {` + `
 ` + `      try {` + `
 ` + `        onErrorEntry(entry);` + `
-` + `      } catch {` + `
-` + `        // a subscriber must never break the capture` + `
-` + `      }` + `
+` + `      } catch {}` + `
 ` + `    }` + `
 ` + `  }` + `
 ` + `` + `
@@ -132,12 +74,9 @@ class z2ui5_cl_ui5f_console_js {
 ` + `      } else {` + `
 ` + `        window.sessionStorage?.removeItem(ALERT_KEY);` + `
 ` + `      }` + `
-` + `    } catch {` + `
-` + `      // storage unavailable - the switch then does not persist` + `
-` + `    }` + `
+` + `    } catch {}` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Carry the error-level entries into the next page load (see RELOAD_KEY).` + `
 ` + `  function persist() {` + `
 ` + `    try {` + `
 ` + `      const errors = entries` + `
@@ -146,9 +85,7 @@ class z2ui5_cl_ui5f_console_js {
 ` + `        .map((entry) => ({ ...entry, previousLoad: true }));` + `
 ` + `      if (!errors.length) return;` + `
 ` + `      window.sessionStorage?.setItem(RELOAD_KEY, JSON.stringify(errors));` + `
-` + `    } catch {` + `
-` + `      // storage full or unavailable - they simply do not survive` + `
-` + `    }` + `
+` + `    } catch {}` + `
 ` + `  }` + `
 ` + `` + `
 ` + `  function restore() {` + `
@@ -168,19 +105,12 @@ class z2ui5_cl_ui5f_console_js {
 ` + `    }` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Errors are recognised by SHAPE, not with \`instanceof Error\`: an error` + `
-` + `  // thrown in another realm (an iframe, a worker, a library bundled with` + `
-` + `  // its own Error) is not an instance of this realm's Error, and losing` + `
-` + `  // its stack is exactly the case this capture exists for.` + `
 ` + `  function isErrorLike(value) {` + `
 ` + `    if (!value || typeof value !== "object") return false;` + `
 ` + `    if (Object.prototype.toString.call(value) === "[object Error]") return true;` + `
 ` + `    return typeof value.stack === "string" && typeof value.message === "string";` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Render one console argument the way the browser console would - but as` + `
-` + `  // a string, and without ever throwing. Errors keep their stack, which is` + `
-` + `  // the whole point of capturing them.` + `
 ` + `  function renderArg(value, depth) {` + `
 ` + `    if (value === undefined) return "undefined";` + `
 ` + `    if (value === null) return "null";` + `
@@ -196,13 +126,18 @@ class z2ui5_cl_ui5f_console_js {
 ` + `    }` + `
 ` + `    if ((depth || 0) >= MAX_DEPTH) return "[...]";` + `
 ` + `    try {` + `
-` + `      // A plain stringify covers arrays and objects; the replacer keeps a` + `
-` + `      // circular graph (a UI5 control reaches its parent) from throwing.` + `
 ` + `      const seen = new WeakSet();` + `
-` + `      return JSON.stringify(value, (key, val) => {` + `
+` + `      const nodeDepth = new WeakMap();` + `
+` + `      return JSON.stringify(value, function replace(key, val) {` + `
 ` + `        if (typeof val === "object" && val !== null) {` + `
 ` + `          if (seen.has(val)) return "[Circular]";` + `
+` + `          const parent =` + `
+` + `            typeof this === "object" && this !== null` + `
+` + `              ? nodeDepth.get(this) || 0` + `
+` + `              : 0;` + `
+` + `          if (parent >= MAX_DEPTH) return "[...]";` + `
 ` + `          seen.add(val);` + `
+` + `          nodeDepth.set(val, parent + 1);` + `
 ` + `        }` + `
 ` + `        if (isErrorLike(val)) return val.stack || String(val);` + `
 ` + `        return val;` + `
@@ -222,25 +157,17 @@ class z2ui5_cl_ui5f_console_js {
 ` + `    return parts.join(" ");` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // ------------------------------------------------------------------` + `
-` + `  // Sources` + `
-` + `  // ------------------------------------------------------------------` + `
-` + `` + `
 ` + `  function captureConsole(level, args) {` + `
 ` + `    if (capturing) return;` + `
 ` + `    capturing = true;` + `
 ` + `    try {` + `
 ` + `      push(level, "console", renderArgs(args));` + `
 ` + `    } catch {` + `
-` + `      // capture must never break the call it is observing` + `
 ` + `    } finally {` + `
 ` + `      capturing = false;` + `
 ` + `    }` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // UI5 log levels are numeric (Log.Level): 1 FATAL, 2 ERROR, 3 WARNING,` + `
-` + `  // 4 INFO, 5 DEBUG, 6 TRACE. Mapped onto the console level names so one` + `
-` + `  // rendering serves both sources.` + `
 ` + `  const UI5_LEVELS = {` + `
 ` + `    1: "error",` + `
 ` + `    2: "error",` + `
@@ -256,25 +183,15 @@ class z2ui5_cl_ui5f_console_js {
 ` + `      const component = logEntry?.component ? \`[\${logEntry.component}] \` : "";` + `
 ` + `      const details = logEntry?.details ? \` - \${logEntry.details}\` : "";` + `
 ` + `      push(level, "ui5", \`\${component}\${logEntry?.message || ""}\${details}\`);` + `
-` + `    } catch {` + `
-` + `      // never let a malformed log entry escape` + `
-` + `    }` + `
+` + `    } catch {}` + `
 ` + `  }` + `
-` + `` + `
-` + `  // ------------------------------------------------------------------` + `
-` + `  // Install / uninstall` + `
-` + `  // ------------------------------------------------------------------` + `
 ` + `` + `
 ` + `  function installConsole() {` + `
 ` + `    for (const name of METHODS) {` + `
 ` + `      const original = window.console?.[name];` + `
 ` + `      if (typeof original !== "function") continue;` + `
 ` + `      originals[name] = original;` + `
-` + `      // The original is called FIRST and always, so the browser console` + `
-` + `      // behaves exactly as it did before - this only adds a copy. The cost` + `
-` + `      // is that the console's source link now resolves to this wrapper` + `
-` + `      // rather than the calling line; capturing the call at all is what` + `
-` + `      // buys the in-app log, and uninstall() restores the native methods.` + `
+` + `` + `
 ` + `      window.console[name] = function (...args) {` + `
 ` + `        try {` + `
 ` + `          original.apply(window.console, args);` + `
@@ -308,9 +225,7 @@ class z2ui5_cl_ui5f_console_js {
 ` + `    const Log = sap.ui.require("sap/base/Log");` + `
 ` + `    try {` + `
 ` + `      Log?.removeLogListener?.(ui5Listener);` + `
-` + `    } catch {` + `
-` + `      // listener already gone` + `
-` + `    }` + `
+` + `    } catch {}` + `
 ` + `    ui5Listener = null;` + `
 ` + `  }` + `
 ` + `` + `
@@ -321,9 +236,7 @@ class z2ui5_cl_ui5f_console_js {
 ` + `` + `
 ` + `    onWindowError = (event) => {` + `
 ` + `      const stack = event?.error?.stack;` + `
-` + `      // A stack already carries the position. Appending it anyway put it at` + `
-` + `      // the end of the LAST stack line, where it reads as part of the` + `
-` + `      // deepest frame - only add it when there is no stack to place it in.` + `
+` + `` + `
 ` + `      if (stack) {` + `
 ` + `        push("error", "uncaught", stack);` + `
 ` + `        return;` + `
@@ -372,8 +285,6 @@ class z2ui5_cl_ui5f_console_js {
 ` + `    return entries;` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // How many entries the ring had to drop, so the log can say so rather` + `
-` + `  // than silently looking complete.` + `
 ` + `  function getDropped() {` + `
 ` + `    return dropped;` + `
 ` + `  }` + `
@@ -386,7 +297,7 @@ class z2ui5_cl_ui5f_console_js {
 ` + `    setAlertOnError,` + `
 ` + `    getEntries,` + `
 ` + `    getDropped,` + `
-` + `    // exposed for the unit specs` + `
+` + `` + `
 ` + `    _internals: { renderArg, MAX_ENTRIES, MAX_TEXT_CHARS },` + `
 ` + `  };` + `
 ` + `});` + `

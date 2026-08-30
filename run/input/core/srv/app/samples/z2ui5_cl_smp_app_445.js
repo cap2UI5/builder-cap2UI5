@@ -5,9 +5,7 @@ class z2ui5_cl_smp_app_445 extends z2ui5_if_app {
 
   async main(client) {
     this.client = client;
-    if (client.check_on_init()) {
-      this.view_display();
-    } else if (client.check_on_navigated()) {
+    if (client.check_on_navigated()) {
       this.view_display();
     } else if (client.check_on_event()) {
       this.on_event();
@@ -119,7 +117,7 @@ class z2ui5_cl_smp_app_445 extends z2ui5_if_app {
     this.device_form({ parent: dialog.ele(`content`) });
     dialog.ele(`buttons`)
       .tag(`Button`)
-      .a({ n: `press`, v: this.client.follow_up_action(this.client.cs_event.popup_close) })
+      .a({ n: `press`, v: this.client.follow_up_action_result(this.client.cs_event.popup_close) })
       .a({ n: `text`, v: `Close` })
       .a({ n: `type`, v: `Emphasized` });
     this.client.popup_display(popup.stringify());

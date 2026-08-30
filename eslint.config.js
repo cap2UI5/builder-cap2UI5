@@ -19,7 +19,7 @@ module.exports = [
   },
   js.configs.recommended,
   {
-    files: ["scripts/**/*.js", "test/**/*.js", "src/srv/**/*.js", "src/test/**/*.js"],
+    files: ["scripts/**/*.js", "test/**/*.js", "src/scripts/**/*.js", "src/srv/**/*.js", "src/test/**/*.js"],
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: "commonjs",

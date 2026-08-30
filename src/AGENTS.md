@@ -23,14 +23,35 @@ Guidance for AI agents and contributors. Read before making any change.
 
 - App at the repo root: `app/` (webapp + starter page), `db/` (draft table
   `cap2ui5.z2ui5_t_01`), `srv/` (service, server wiring, `srv/app/` custom
-  apps, `srv/external/` Northwind model), `test/` (jest), `mta.yaml`
-  (BTP deployment).
+  apps, `srv/external/` Northwind model), `test/` (jest), `scripts/`
+  (`vendor-core.js`, the production-build step), `mta.yaml` (BTP deployment).
 - `core/` — the **vendored** platform-neutral core package (npm name
   `abap2UI5`, linked via `"abap2UI5": "file:./core"`): engine, framework
   classes (`core/srv/z2ui5/`), ~105 bundled samples
   (`core/srv/app/samples/`), the z2ui5 webapp source. Its dependency tree is
   part of the app lock (under `core/node_modules/`), so **one** `npm ci` at
   the root installs everything.
+
+## Building for deployment
+
+`npm run build:production` — **not** a bare `cds build --production`. The
+CDS build stages the server module into `gen/srv` and copies the app's
+`"abap2UI5": "file:./core"` dependency with it, but never the target of that
+specifier; `scripts/vendor-core.js` puts the vendored core there afterwards.
+Without it the pushed module resolved `abap2UI5` to a dangling symlink and
+died at startup with `Cannot find module 'abap2UI5/engine'` — silently,
+because `npm ci` does not check symlink targets and `cds build` exits 0.
+`mta.yaml`'s `before-all` runs the pair, `test/production-build.test.js`
+gates it, and `deploy-check.yml` installs and loads the staged module.
+
+`openui5-dist` — the UI5 runtime `cds watch` serves at `/resources` — is a
+devDependency of this app, not a dependency of the framework: on BTP
+`/resources` is routed to the `ui5` destination, so the deployed server never
+serves it, and the package is 611 MB of deprecated release tooling that
+carried 43 advisories (3 critical). `npm ci --omit=dev` in the staged module
+therefore leaves it out; the vendor step additionally prunes it from the
+staged tree if a core that still declares it comes through the mirror.
+Staged tree today: 19 MB, 0 advisories.
 
 ## Run & test
 

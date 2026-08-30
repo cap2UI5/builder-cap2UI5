@@ -29,7 +29,12 @@ by hand.
 
 ```jsonc
 // package.json
-{ "dependencies": { "abap2UI5": "..." } }
+{
+  "dependencies": { "abap2UI5": "..." },
+  // OPTIONAL — see "The UI5 runtime" below. Without it the shell bootstraps
+  // from a CDN and /resources is not served.
+  "devDependencies": { "openui5-dist": "1.113.0" }
+}
 ```
 
 ```cds
@@ -74,6 +79,35 @@ test suite exercises exactly the path an external consumer gets.
 view-builder chain, the engine seam and the CAP entry point. The view builder
 is the one that pays for itself — a fluent chain with no completion is a
 guessing game.
+
+## The UI5 runtime is not a dependency of this package
+
+`openui5-dist` is declared as an **optional peer dependency**, not a
+dependency: install it and the server serves the UI5 runtime at `/resources`
+(offline-capable local development); leave it out and the framework logs
+
+```
+[z2ui5] openui5-dist not resolvable — /resources not served; bootstrap from a CDN instead
+```
+
+once at startup and carries on — the shell then bootstraps UI5 from
+`https://sdk.openui5.org`. `engine.ui5_resources_dir()` returns `null` in that
+case, and every mount point already guards on it.
+
+It is optional because it is 611 MB and, being a *distribution* package, its
+own dependencies are its release tooling — `npm@6`, `request`, `jsdom`,
+`simple-git` — which carry advisories (3 critical at the time of writing) and
+run no code this framework ever calls. Nothing here loads it; only the
+`/resources` static mount reads files out of it. A deployment that gets UI5
+from a CDN or a platform destination — which is the normal shape on BTP —
+should not be paying for that, and until 2026-08 it did.
+
+The version is a **pin, not a range**: 1.113.0 sits deliberately between
+upstream abap2UI5's 1.71 floor and the 1.136+ v2 track, so moving it is a
+compatibility decision with a testing story attached, not a routine
+dependency bump. Dependabot is configured to leave it alone. If you install
+it yourself, matching the pin is what keeps your local `/resources` identical
+to what the framework was tested against; npm will warn if you do not.
 
 ## The seam
 

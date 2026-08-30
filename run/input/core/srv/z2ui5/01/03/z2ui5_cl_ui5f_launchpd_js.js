@@ -7,20 +7,7 @@ class z2ui5_cl_ui5f_launchpd_js {
 ` + `  (mobileLibrary, Lib, AppState) => {` + `
 ` + `    "use strict";` + `
 ` + `` + `
-` + `    // ------------------------------------------------------------------` + `
-` + `    // Actions against the SAP Fiori Launchpad shell: cross-app navigation` + `
-` + `    // and the shell title. They all resolve the launchpad services captured` + `
-` + `    // at component start (AppState.state.oLaunchpad). The cross-app-nav` + `
-` + `    // handlers no-op with a log line outside the FLP; the title handler is` + `
-` + `    // deliberately silent, because ShellUIService resolves asynchronously` + `
-` + `    // and can legitimately still be unset inside the FLP.` + `
-` + `    // ------------------------------------------------------------------` + `
-` + `` + `
 ` + `    const _URLHelper = mobileLibrary.URLHelper;` + `
-` + `` + `
-` + `    // ------------------------------------------------------------------` + `
-` + `    // Launchpad helpers` + `
-` + `    // ------------------------------------------------------------------` + `
 ` + `` + `
 ` + `    function withCrossAppNavigator(callback) {` + `
 ` + `      const nav = AppState.state.oLaunchpad?.CrossAppNavigator;` + `
@@ -44,10 +31,6 @@ class z2ui5_cl_ui5f_launchpd_js {
 ` + `        const hash =` + `
 ` + `          nav.hrefForExternal({ target: args[1], params: args[2] }) || "";` + `
 ` + `        if (args[3] === "EXT") {` + `
-` + `          // External redirect: replace the location while keeping the host.` + `
-` + `          // base is the current page (same origin) + a shell-hash fragment,` + `
-` + `          // so this is same-origin by construction; validate anyway to stay` + `
-` + `          // consistent with every other redirect handler in this file.` + `
 ` + `          const base = window.location.href.split("#")[0];` + `
 ` + `          const url = \`\${base}\${hash}\`;` + `
 ` + `          if (!Lib.isValidRedirectURL(url)) {` + `
@@ -81,8 +64,6 @@ class z2ui5_cl_ui5f_launchpd_js {
 ` + `      }` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // The events this module owns in the eF dispatch (see` + `
-` + `    // core/FrontendAction.js, which merges the domain modules' handler maps).` + `
 ` + `    const handlers = {` + `
 ` + `      CROSS_APP_NAV_TO_PREV_APP: evCrossAppNavToPrevApp,` + `
 ` + `      CROSS_APP_NAV_TO_EXT: evCrossAppNavToExt,` + `

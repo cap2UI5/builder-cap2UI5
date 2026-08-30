@@ -51,6 +51,16 @@ const MAX_DISSOLVE_DEPTH = 5;
 const TK = { table: `h`, dref: `l`, oref: `r`, struct1: `u`, struct2: `v` };
 const KD = { elem: `E`, struct: `S`, table: `T`, ref: `R`, class: `C` };
 
+/** Text that converts losslessly into a numeric ABAP component. Deliberately
+ *  stricter than Number(): an empty string is NOT numeric text (ABAP reads it
+ *  as 0 and the caller keeps that path), and `1,250.00` is not either — a
+ *  thousands separator is exactly the input the skip trace exists for. */
+function isNumericText(v) {
+  if (typeof v === `number`) return Number.isFinite(v);
+  if (typeof v !== `string` || v.trim() === ``) return false;
+  return !Number.isNaN(Number(v));
+}
+
 /** plain data object (struct/table) — never a class instance */
 function isPlainData(v) {
   if (Array.isArray(v)) return true;
@@ -218,6 +228,13 @@ class z2ui5_cl_ui5_srv_model {
                   : Array.isArray(attri) ? { value: attri }
                   : { value: [] };
     this.mo_app   = app;
+    // Cells this roundtrip's delta could not apply — {name, row, field} each,
+    // read back by the handler and handed to the app as
+    // client->get()-t_model_skipped. A refused cell used to vanish without a
+    // word: the old value stayed in the model while the browser went on
+    // showing what the user typed, and nothing could tell the app which field
+    // was refused. See _delta_apply_field.
+    this.mt_skipped = [];
   }
 
   // ----- path resolution -----
@@ -706,7 +723,7 @@ class z2ui5_cl_ui5_srv_model {
     if (!Array.isArray(tab)) return;
 
     if (io_val_front && typeof io_val_front.slice === `function` && Array.isArray(io_val_front.mt_json_tree)) {
-      this._delta_apply_nodes(io_val_front.slice(`/__delta`), tab);
+      this._delta_apply_nodes(io_val_front.slice(`/__delta`), tab, iv_name);
       return;
     }
 
@@ -715,8 +732,11 @@ class z2ui5_cl_ui5_srv_model {
     z2ui5_cl_ui5_srv_model._apply_table_delta(tab, delta);
   }
 
-  /** abap delta_apply_nodes — recursive ajson delta walk. */
-  _delta_apply_nodes(io_delta, ct_tab) {
+  /** abap delta_apply_nodes — recursive ajson delta walk. `iv_table` is the
+   *  bound attribute the rows belong to, spelled as the app declared it
+   *  (`MT_PRODUCTS`, or parent-first `MT_TREE-NODES` for a nested table); it
+   *  is only carried so a refused cell can name itself in mt_skipped. */
+  _delta_apply_nodes(io_delta, ct_tab, iv_table = ``) {
     for (const idxStr of io_delta.members(`/`)) {
       // the delta key is a client-supplied row index; a garbled
       // (non-numeric) key must skip that row, not abort the request
@@ -729,7 +749,9 @@ class z2ui5_cl_ui5_srv_model {
       for (const fld of lo_row.members(`/`)) {
         const key = z2ui5_cl_ui5_srv_model._match_key(row, fld);
         if (key === undefined) continue;
-        this._delta_apply_field(lo_row, `/${fld}`, row, key);
+        // the trace entry for this cell, resolved once: ABAP-side names and a
+        // 1-based row, so the handler has nothing left to derive
+        this._delta_apply_field(lo_row, `/${fld}`, row, key, { name: iv_table, row: idx + 1, field: fld });
       }
     }
   }
@@ -737,9 +759,13 @@ class z2ui5_cl_ui5_srv_model {
   /**
    * abap delta_apply_field — apply one delta field value into the referenced
    * row component. A single malformed cell (e.g. text into a numeric target)
-   * is skipped here so it cannot abort the whole model batch.
+   * is skipped here so it cannot abort the whole model batch — and the skip
+   * is RECORDED in mt_skipped (`is_cell`, resolved by the caller), because a
+   * cell that vanishes without a word is what made a typed price disappear
+   * while the browser kept showing it.
    */
-  _delta_apply_field(lo_row, p, row, key) {
+  _delta_apply_field(lo_row, p, row, key, is_cell = null) {
+    const refuse = () => { if (is_cell) this.mt_skipped.push(is_cell); };
     try {
       const nodeType = lo_row.get_node_type(p);
 
@@ -750,7 +776,11 @@ class z2ui5_cl_ui5_srv_model {
         // component shipped as a whole value
         const lo_sub = lo_row.slice(p);
         if (lo_sub.exists(`/__delta`) === true) {
-          if (Array.isArray(row[key])) this._delta_apply_nodes(lo_sub.slice(`/__delta`), row[key]);
+          // a nested row cell traces under the path to its OWN table,
+          // parent first — MT_TREE-NODES, not MT_TREE
+          if (Array.isArray(row[key])) {
+            this._delta_apply_nodes(lo_sub.slice(`/__delta`), row[key], is_cell ? `${is_cell.name}-${is_cell.field}` : ``);
+          }
         } else {
           const args = { iv_corresponding: true, ev_container: row[key] };
           lo_sub.to_abap(args);
@@ -764,18 +794,27 @@ class z2ui5_cl_ui5_srv_model {
       } else {
         // numbers go through the raw string — lossless into the target type
         const s = lo_row.get_string(p);
+        // A numeric TARGET is one that currently holds a number. ABAP checks
+        // the declared component type instead, which JS does not carry: a row
+        // is a plain object and `price` (TYPE p) is indistinguishable from
+        // `col2` (TYPE string) once both hold the text `'2'`. Guessing from
+        // the text — "looks numeric, so the component must be numeric" —
+        // refuses `Y` into a string column that happens to hold `2`, which is
+        // ordinary, correct input. So the narrow, type-honest rule stands and
+        // two upstream tests stay baselined; see the js-limit entries for
+        // ltcl_test_delta_apply.
         if (typeof row[key] === `number`) {
-          const n = Number(s);
           // text sent into a numeric target — skip just this cell
-          if (Number.isNaN(n)) return;
-          row[key] = n;
+          if (!isNumericText(s)) { refuse(); return; }
+          row[key] = Number(s);
         } else {
           row[key] = s;
         }
       }
     } catch {
       // a single malformed cell must not discard every other edit in this
-      // batch — skip just it
+      // batch — skip just it, and say so
+      refuse();
     }
   }
 
