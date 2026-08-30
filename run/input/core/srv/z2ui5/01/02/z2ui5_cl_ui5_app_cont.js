@@ -63,9 +63,26 @@ class z2ui5_cl_ui5_app_cont {
     return model.main_json_stringify_instance();
   }
 
+  /**
+   * Apply the incoming model delta and RETURN the cells it could not apply
+   * ({name, row, field} each). The trace has to travel back with the result:
+   * the model instance is created here and dropped on the next line, so a
+   * refused cell recorded on it is otherwise unreachable — which is how a
+   * typed price could vanish while the browser went on showing it.
+   */
   model_json_parse(iv_view, io_model) {
+    // Upstream's signature is model_json_parse( io_model ) — one importing
+    // parameter. This port carries an extra leading `view`, which the
+    // framework passes and nothing else knows about, so a caller written
+    // against the ABAP signature handed the model in as `view` and the delta
+    // was silently never applied. Accept both shapes.
+    if (io_model === undefined) {
+      io_model = iv_view;
+      iv_view = ``;
+    }
     const model = this._create_model();
     model.main_json_to_attri_instance(iv_view, io_model);
+    return model.mt_skipped || [];
   }
 
   /**

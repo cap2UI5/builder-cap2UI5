@@ -37,7 +37,7 @@ class z2ui5_cl_smp_app_455 extends z2ui5_if_app {
       .tag(`SearchField`)
       .a({ n: `width`, v: `30%` })
       .a({ n: `placeholder`, v: `Search products` })
-      .a({ n: `liveChange`, v: this.client.follow_up_action(z2ui5_if_client.cs_event.binding_call, [`productList`, `items`, `filter`, `NAME`, `Contains`, `\${$parameters>/newValue}`]) });
+      .a({ n: `liveChange`, v: this.client.follow_up_action_result(z2ui5_if_client.cs_event.binding_call, [`productList`, `items`, `filter`, `NAME`, `Contains`, `\${$parameters>/newValue}`]) });
     page.ele(`List`)
       .a({ n: `headerText`, v: `Products` })
       .a({ n: `items`, v: this.client._bind(this.t_products) })

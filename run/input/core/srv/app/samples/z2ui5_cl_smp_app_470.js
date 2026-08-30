@@ -90,7 +90,7 @@ class z2ui5_cl_smp_app_470 extends z2ui5_if_app {
       .a({ n: `info`, v: `{QTY} {UNIT}` });
     dialog.ele(`buttons`)
       .tag(`Button`)
-      .a({ n: `press`, v: this.client.follow_up_action(this.client.cs_event.popup_close) })
+      .a({ n: `press`, v: this.client.follow_up_action_result(this.client.cs_event.popup_close) })
       .a({ n: `text`, v: `Close` })
       .a({ n: `type`, v: `Emphasized` });
     this.client.popup_display(popup.stringify());

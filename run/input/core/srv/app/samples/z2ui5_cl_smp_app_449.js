@@ -5,9 +5,7 @@ class z2ui5_cl_smp_app_449 extends z2ui5_if_app {
 
   async main(client) {
     this.client = client;
-    if (client.check_on_init()) {
-      this.view_display();
-    } else if (client.check_on_navigated()) {
+    if (client.check_on_navigated()) {
       this.view_display();
     } else {
       this.on_event();

@@ -12,20 +12,9 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `  (ODataModel, Lib, ViewSlots, AppState) => {` + `
 ` + `    "use strict";` + `
 ` + `` + `
-` + `    // ------------------------------------------------------------------` + `
-` + `    // Actions against the running VIEWS and their models: focus, scrolling,` + `
-` + `    // element binding, model size limits, the OData model switch, backend` + `
-` + `    // timers and the app-registered z2ui5 custom functions.` + `
-` + `    // ------------------------------------------------------------------` + `
-` + `` + `
-` + `    // Animation duration (ms) mapped to a "smooth" scroll request; 0 means an` + `
-` + `    // instant jump. Shared by every scroll path in evScrollTo.` + `
 ` + `    const SMOOTH_SCROLL_MS = 300;` + `
 ` + `` + `
 ` + `    function evSetSizeLimit(oController, args) {` + `
-` + `      // Two call shapes:` + `
-` + `      //   ["SET_SIZE_LIMIT", "<limit>", "<viewKey>"]   -> set the limit` + `
-` + `      //   ["SET_SIZE_LIMIT", "<viewKey>"]              -> reset the limit` + `
 ` + `      const hasLimit = args[2] !== undefined && args[2] !== "";` + `
 ` + `      const viewKey = hasLimit ? args[2] : args[1];` + `
 ` + `      const limit = hasLimit ? Number(args[1]) : NaN;` + `
@@ -37,17 +26,18 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `        delete AppState.state.viewSizeLimits[viewKey];` + `
 ` + `      }` + `
 ` + `` + `
-` + `      // MAIN and the two nested views share one root model via propagation, so` + `
-` + `      // resolve the model through MAIN for those slots and apply the effective` + `
-` + `      // (largest) limit across them; popup/popover keep their own model/limit.` + `
 ` + `      const modelKey = Lib.isRootModelSlot(viewKey) ? "MAIN" : viewKey;` + `
-` + `      const model = ViewSlots.getView(modelKey)?.getModel();` + `
+` + `` + `
+` + `      const view = ViewSlots.getView(modelKey);` + `
+` + `      const model = view` + `
+` + `        ? (ViewSlots.trackedModel(view) ?? view.getModel())` + `
+` + `        : undefined;` + `
 ` + `      if (model) {` + `
 ` + `        const effective = Lib.effectiveSizeLimit(` + `
 ` + `          AppState.state.viewSizeLimits,` + `
 ` + `          viewKey,` + `
 ` + `        );` + `
-` + `        // 100 is the UI5 JSONModel default size limit.` + `
+` + `` + `
 ` + `        model.setSizeLimit(effective ?? 100);` + `
 ` + `        model.refresh(true);` + `
 ` + `      }` + `
@@ -62,25 +52,24 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `        });` + `
 ` + `        const oView = ViewSlots.getView("MAIN");` + `
 ` + `        if (oView) {` + `
-` + `          oView.setModel(oModel, args[2] || undefined);` + `
+` + `          const name = args[2] || undefined;` + `
+` + `` + `
+` + `          const previous = oView.getModel(name);` + `
+` + `          oModel._z2ui5OwnedOData = true;` + `
+` + `          oView.setModel(oModel, name);` + `
+` + `          if (previous?._z2ui5OwnedOData && previous !== oModel) {` + `
+` + `            previous.destroy();` + `
+` + `          }` + `
 ` + `        } else {` + `
-` + `          // No view to attach to - release the model instead of leaking it.` + `
 ` + `          oModel.destroy();` + `
 ` + `        }` + `
 ` + `      } catch (e) {` + `
 ` + `        Lib.logError(\`SET_ODATA_MODEL: failed for '\${args[1]}'\`, e);` + `
-` + `        // setModel (or the model construction) threw after the model opened` + `
-` + `        // its metadata request - release it so it does not leak.` + `
+` + `` + `
 ` + `        oModel?.destroy?.();` + `
 ` + `      }` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // BIND_ELEMENT: element-bind a whole view slot (popup / popover / main) to` + `
-` + `    // a row of a registered table, so the fragment's relative bindings ({Name},` + `
-` + `    // {ProductPicUrl}, ...) resolve against that row - the abap2UI5 equivalent of` + `
-` + `    // oControl.bindElement(oCtx.getPath()). args = [slot, index, path]; the path` + `
-` + `    // comes from client->_bind( table ) (braces already stripped server-side and` + `
-` + `    // again here defensively), the slot from the follow_up_action view param.` + `
 ` + `    function evBindElement(oController, args) {` + `
 ` + `      const slot = args[1] || "MAIN";` + `
 ` + `      const view = ViewSlots.getView(slot);` + `
@@ -109,10 +98,6 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `    }` + `
 ` + `` + `
 ` + `    function evStartTimer(oController, args) {` + `
-` + `      // Intentionally a single timer slot: args[0] is always the event` + `
-` + `      // name "START_TIMER", so a new START_TIMER replaces the previous` + `
-` + `      // one. At most one backend timer is pending at any time - this is` + `
-` + `      // by design, not a bug.` + `
 ` + `      const timerKey = args[0];` + `
 ` + `      const callbackEvent = args[1];` + `
 ` + `      const delay = Number(args[2]) || 0;` + `
@@ -120,23 +105,12 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `      clearTimeout(timers[timerKey]);` + `
 ` + `      timers[timerKey] = setTimeout(() => {` + `
 ` + `        delete timers[timerKey];` + `
-` + `        // nothing cancels a pending timer on app teardown - an FLP close or` + `
-` + `        // re-launch leaves it armed, so it must not fire the old app's event` + `
-` + `        // into the new session` + `
+` + `` + `
 ` + `        if (Lib.isDestroyed(oController)) return;` + `
-` + `        // dispatch as a background event (args[2] = ignore busy) - a timer` + `
-` + `        // firing while an ordinary roundtrip is in flight must not be` + `
-` + `        // swallowed by the busy guard, or a self-rescheduling poll chain` + `
-` + `        // dies on the first collision with a user click` + `
+` + `` + `
 ` + `        oController.eB([callbackEvent, false, true]);` + `
 ` + `      }, delay);` + `
 ` + `    }` + `
-` + `` + `
-` + `    // The three handlers below resolve their target with ViewSlots.resolveById` + `
-` + `    // (not byId "MAIN"): it searches every open slot first, so controls in a` + `
-` + `    // popup/popover/nested view are found, and falls back to the global` + `
-` + `    // registry, so a fully-qualified id resolves too - ids that come from a` + `
-` + `    // UI5 Message (getControlIds()) or any event carry the view prefix.` + `
 ` + `` + `
 ` + `    function evSetFocus(oController, args) {` + `
 ` + `      const oElement = ViewSlots.resolveById(args[1]);` + `
@@ -157,25 +131,13 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `        }` + `
 ` + `      };` + `
 ` + `` + `
-` + `      // The control may still be missing from the DOM when SET_FOCUS runs` + `
-` + `      // together with a fresh view build. Apply now if it is rendered,` + `
-` + `      // otherwise once it is.` + `
 ` + `      Lib.whenRendered(oElement, oController, () => {` + `
 ` + `        applyFocus();` + `
 ` + `        const dom = oElement.getDomRef();` + `
 ` + `        if (dom && dom.contains(document.activeElement)) return;` + `
-` + `        // The focus did not stick. A view_model_update in the same response` + `
-` + `        // may have changed the control - e.g. re-enabled a locked input via` + `
-` + `        // its \`enabled\` binding: the control already reports the new state,` + `
-` + `        // but the DOM still carries the OLD rendering until UI5's async` + `
-` + `        // re-render, and the browser silently ignores focus() on a disabled` + `
-` + `        // element. Re-apply once after the pending re-render has replaced` + `
-` + `        // the DOM.` + `
+` + `` + `
 ` + `        const prevActive = document.activeElement;` + `
-` + `        // "Same place" by node OR by element id: when the re-render also` + `
-` + `        // rebuilt the element that held the focus (the pressed button in the` + `
-` + `        // same form), the focus sits on a NEW node of the SAME control` + `
-` + `        // afterwards - that still counts as "the user did not move it".` + `
+` + `` + `
 ` + `        const samePlace = (el) =>` + `
 ` + `          el == null ||` + `
 ` + `          el === document.body ||` + `
@@ -184,15 +146,10 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `        const delegate = {` + `
 ` + `          onAfterRendering: () => {` + `
 ` + `            oElement.removeEventDelegate(delegate);` + `
-` + `            // Defer past the rendering task: when the re-render replaced the` + `
-` + `            // focused element, UI5's FocusHandler restores its focus AFTER` + `
-` + `            // all onAfterRendering delegates ran - focusing here would be` + `
-` + `            // overridden right away.` + `
+` + `` + `
 ` + `            setTimeout(() => {` + `
 ` + `              if (Lib.isDestroyed(oController)) return;` + `
-` + `              // Only when the focus was not actively moved elsewhere in` + `
-` + `              // between - a re-render at some arbitrary later point must` + `
-` + `              // never steal the user's focus.` + `
+` + `` + `
 ` + `              if (!samePlace(document.activeElement)) return;` + `
 ` + `              applyFocus();` + `
 ` + `            }, 0);` + `
@@ -203,18 +160,6 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `    }` + `
 ` + `` + `
 ` + `    function evScrollTo(oController, args) {` + `
-` + `      // args[1] = control id` + `
-` + `      // args[2] = scrollTop  (Y, vertical, px)` + `
-` + `      // args[3] = scrollLeft (X, horizontal, px) - optional, default 0` + `
-` + `      // args[4] = behavior - "auto" (default) | "smooth" | "instant"` + `
-` + `      // Strategy: prefer the control's scroll delegate (sap.m.Page,` + `
-` + `      // ScrollContainer etc. expose ScrollEnablement). The delegate knows` + `
-` + `      // the real scroll container, which often is NOT the control's root` + `
-` + `      // DOM element - so native Element.scrollTo on getDomRef() silently` + `
-` + `      // does nothing on a Page. ScrollEnablement.scrollTo(x, y, time)` + `
-` + `      // animates when time > 0, so "smooth" maps to a 300ms animation.` + `
-` + `      // Native Element.scrollTo is only used as a fallback for controls` + `
-` + `      // without a delegate.` + `
 ` + `      try {` + `
 ` + `        const oElement = ViewSlots.resolveById(args[1]);` + `
 ` + `        if (!oElement) return;` + `
@@ -227,13 +172,10 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `        try {` + `
 ` + `          const delegate = oElement.getScrollDelegate?.();` + `
 ` + `          if (delegate?.scrollTo) {` + `
-` + `            // ScrollEnablement / iScroll delegate: scrollTo(x, y, time)` + `
 ` + `            delegate.scrollTo(x, y, smooth ? SMOOTH_SCROLL_MS : 0);` + `
 ` + `            handled = true;` + `
 ` + `          }` + `
-` + `        } catch {` + `
-` + `          // fall through` + `
-` + `        }` + `
+` + `        } catch {}` + `
 ` + `` + `
 ` + `        if (!handled) {` + `
 ` + `          const dom =` + `
@@ -245,7 +187,6 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `            dom.scrollTop = y;` + `
 ` + `            dom.scrollLeft = x;` + `
 ` + `          } else if (oElement.scrollTo) {` + `
-` + `            // sap.m.Page.scrollTo(y, time) - vertical only` + `
 ` + `            oElement.scrollTo(y, smooth ? SMOOTH_SCROLL_MS : 0);` + `
 ` + `          }` + `
 ` + `        }` + `
@@ -255,12 +196,6 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `    }` + `
 ` + `` + `
 ` + `    function evScrollIntoView(oController, args) {` + `
-` + `      // args[1] = control id` + `
-` + `      // args[2] = behavior - "smooth" (default) | "auto" | "instant"` + `
-` + `      // args[3] = block    - "start"  (default) | "center" | "end" | "nearest"` + `
-` + `      // args[4] = inline   - "nearest" (default)| "start"  | "center" | "end"` + `
-` + `      // Modern declarative scroll: bring a control into the viewport,` + `
-` + `      // regardless of where the surrounding scroll container currently is.` + `
 ` + `      try {` + `
 ` + `        const oElement = ViewSlots.resolveById(args[1]);` + `
 ` + `        if (!oElement) return;` + `
@@ -278,15 +213,10 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `` + `
 ` + `    function evZ2ui5Custom(oController, args) {` + `
 ` + `      try {` + `
-` + `        // Custom functions are registered by apps on the public z2ui5` + `
-` + `        // global (js_loader popup), so resolve them via the facade.` + `
 ` + `        const fn = AppState.getGlobal(args[1]);` + `
 ` + `        if (typeof fn === "function") {` + `
 ` + `          fn(args.slice(2));` + `
 ` + `        } else {` + `
-` + `          // Missing or not callable (e.g. the app never registered it via` + `
-` + `          // the js_loader popup) - log it instead of failing silently or` + `
-` + `          // with a generic TypeError.` + `
 ` + `          Lib.logError(\`Z2UI5: 'z2ui5.\${args[1]}' is not a function\`);` + `
 ` + `        }` + `
 ` + `      } catch (e) {` + `
@@ -296,9 +226,14 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `` + `
 ` + `    function evWizardSetNextStep(oController, args) {` + `
 ` + `      try {` + `
-` + `        const wiz = ViewSlots.byId("MAIN", args[1]);` + `
-` + `        const step = ViewSlots.byId("MAIN", args[2]);` + `
-` + `        const nextStep = ViewSlots.byId("MAIN", args[3]);` + `
+` + `        const wiz = ViewSlots.resolveById(args[1]);` + `
+` + `        const step = ViewSlots.resolveById(args[2]);` + `
+` + `        const nextStep = ViewSlots.resolveById(args[3]);` + `
+` + `        if (!wiz || !step) {` + `
+` + `          Lib.logError(` + `
+` + `            \`WIZARD_SET_NEXT_STEP: '\${args[1]}' / '\${args[2]}' not found\`,` + `
+` + `          );` + `
+` + `        }` + `
 ` + `        if (wiz && step) wiz.discardProgress(step);` + `
 ` + `        if (step && nextStep) step.setNextStep(nextStep);` + `
 ` + `      } catch (e) {` + `
@@ -306,8 +241,6 @@ class z2ui5_cl_ui5f_viewops_js {
 ` + `      }` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // The events this module owns in the eF dispatch (see` + `
-` + `    // core/FrontendAction.js, which merges the domain modules' handler maps).` + `
 ` + `    const handlers = {` + `
 ` + `      SET_SIZE_LIMIT: evSetSizeLimit,` + `
 ` + `      SET_ODATA_MODEL: evSetODataModel,` + `

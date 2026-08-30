@@ -2,26 +2,13 @@
 class z2ui5_cl_ui5f_picker_js {
   static get() {
     let result = ``;
-    result = `// Control picker of the developer tools.` + `
-` + `//` + `
-` + `// Answers the question the developer tools could not answer before: "this` + `
-` + `// control on the screen - which ABAP attribute feeds it, and what is in it` + `
-` + `// right now?". The user clicks a control, and the picker reports its id,` + `
-` + `// type, owning view slot, every binding it carries with the CURRENT value` + `
-` + `// behind each path, and the backend events bound on it.` + `
-` + `//` + `
-` + `// Outside the framework like the rest of devtools/: it works purely` + `
-` + `// against the public UI5 element API and the view-slot registry, and` + `
-` + `// installs its own document listener only while a pick is running.` + `
-` + `sap.ui.define(` + `
+    result = `sap.ui.define(` + `
 ` + `  ["sap/ui/core/Element", "z2ui5/core/Lib", "z2ui5/core/ViewSlots"],` + `
 ` + `  (Element, Lib, ViewSlots) => {` + `
 ` + `    "use strict";` + `
 ` + `` + `
-` + `    // Preview length of a bound value in the report.` + `
 ` + `    const MAX_VALUE_CHARS = 80;` + `
 ` + `` + `
-` + `    // Highlight drawn over the control under the cursor while picking.` + `
 ` + `    const OVERLAY_ID = "z2ui5DevToolsPickerOverlay";` + `
 ` + `` + `
 ` + `    let active = false;` + `
@@ -30,8 +17,6 @@ class z2ui5_cl_ui5f_picker_js {
 ` + `    let boundClick = null;` + `
 ` + `    let boundKey = null;` + `
 ` + `` + `
-` + `    // The report of the last successful pick, so the Picked Control tab` + `
-` + `    // can be rendered from the registry like every other tab.` + `
 ` + `    let lastPickReport = "";` + `
 ` + `` + `
 ` + `    function truncate(value, max) {` + `
@@ -39,9 +24,6 @@ class z2ui5_cl_ui5f_picker_js {
 ` + `      return text.length <= max ? text : \`\${text.slice(0, max)}...\`;` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // Resolve the UI5 control that owns a DOM node. Element.closestTo` + `
-` + `    // arrived in 1.106; on older releases walk up to the nearest node` + `
-` + `    // carrying a UI5 id and look that up instead.` + `
 ` + `    function controlFromDom(node) {` + `
 ` + `      if (!node) return null;` + `
 ` + `      if (Element.closestTo) {` + `
@@ -100,10 +82,6 @@ class z2ui5_cl_ui5f_picker_js {
 ` + `      if (el && el.parentElement) el.parentElement.removeChild(el);` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // The binding info UI5 keeps per property/aggregation, flattened to` + `
-` + `    // { name, path, model, value }. Composite bindings (an expression over` + `
-` + `    // several paths) contribute one row per part, which is exactly what a` + `
-` + `    // developer chasing "which attribute is wrong" needs to see.` + `
 ` + `    function collectBindings(control) {` + `
 ` + `      const out = [];` + `
 ` + `      const infos = control.mBindingInfos || {};` + `
@@ -134,9 +112,6 @@ class z2ui5_cl_ui5f_picker_js {
 ` + `      return out;` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // Event handlers the backend bound on this control. UI5 keeps them in` + `
-` + `    // mEventRegistry; the framework's are always eB / eBP / eF calls, so` + `
-` + `    // the registered handler's source carries the event name.` + `
 ` + `    function collectEvents(control) {` + `
 ` + `      const registry = control.mEventRegistry || {};` + `
 ` + `      const out = [];` + `
@@ -163,8 +138,6 @@ class z2ui5_cl_ui5f_picker_js {
 ` + `      return truncate(value, MAX_VALUE_CHARS);` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // Build the report for a picked control. Exported so it can be unit` + `
-` + `    // tested without a DOM pick.` + `
 ` + `    function describe(control) {` + `
 ` + `      if (!control) return "(no control found at that position)";` + `
 ` + `      const out = ["abap2UI5 Developer Tools - Picked control"];` + `
@@ -214,10 +187,6 @@ class z2ui5_cl_ui5f_picker_js {
 ` + `      removeOverlay();` + `
 ` + `    }` + `
 ` + `` + `
-` + `    // Start a pick. \`callback\` receives the report text for the control the` + `
-` + `    // user clicks, or null when the pick was cancelled with Escape. The` + `
-` + `    // listeners run in the CAPTURE phase and swallow the click, so picking` + `
-` + `    // a button never also presses it.` + `
 ` + `    function start(callback) {` + `
 ` + `      if (active) return;` + `
 ` + `      active = true;` + `
@@ -237,10 +206,7 @@ class z2ui5_cl_ui5f_picker_js {
 ` + `          Lib.logError("DevTools Picker: describe failed", e);` + `
 ` + `          report = "(could not inspect that control)";` + `
 ` + `        }` + `
-` + `        // Kept here rather than on the dialog: the Picked Control tab is` + `
-` + `        // rendered from the tab registry like every other tab, and the` + `
-` + `        // registry must be able to reach a tab's content without the` + `
-` + `        // dialog handing it over.` + `
+` + `` + `
 ` + `        lastPickReport = report;` + `
 ` + `        stop();` + `
 ` + `        if (onDone) onDone(report);` + `
@@ -263,9 +229,7 @@ class z2ui5_cl_ui5f_picker_js {
 ` + `      stop,` + `
 ` + `      describe,` + `
 ` + `      isActive: () => active,` + `
-` + `      // The report of the most recent successful pick, "" before the` + `
-` + `      // first one. A cancelled pick (Escape) leaves the previous report` + `
-` + `      // standing - the user did not ask to throw it away.` + `
+` + `` + `
 ` + `      lastReport: () => lastPickReport,` + `
 ` + `      _internals: { collectBindings, collectEvents, renderValue },` + `
 ` + `    };` + `

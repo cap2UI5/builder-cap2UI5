@@ -14,7 +14,7 @@ class z2ui5_cl_smp_app_170 extends z2ui5_if_app {
       .a({ n: `afterClose`, v: this.client._event(`BTN_OK_1ND`) })
       .ele(`content`);
     dialog.ele(`IconTabBar`)
-      .a({ n: `select`, v: this.client.follow_up_action(this.client.cs_event.control_by_id, [`NavCon`, `to`, `\${$parameters>/selectedKey}`], this.client.cs_view.popup) })
+      .a({ n: `select`, v: this.client.follow_up_action_result(this.client.cs_event.control_by_id, [`NavCon`, `to`, `\${$parameters>/selectedKey}`], this.client.cs_view.popup) })
       .a({ n: `expandable`, b: false })
       .a({ n: `expanded`, b: true })
       .a({ n: `headerMode`, v: `Inline` })

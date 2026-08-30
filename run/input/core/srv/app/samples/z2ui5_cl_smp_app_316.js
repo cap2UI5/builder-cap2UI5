@@ -66,7 +66,7 @@ class z2ui5_cl_smp_app_316 extends z2ui5_if_app {
       .a({ n: `growing`, b: true })
       .a({ n: `growingMaxLines`, v: `7` });
     email_form.tag(`Button`)
-      .a({ n: `press`, v: client.follow_up_action(client.cs_event.urlhelper, [`TRIGGER_EMAIL`, `$${client._bind(this.email)}`]) })
+      .a({ n: `press`, v: client.follow_up_action_result(client.cs_event.urlhelper, [`TRIGGER_EMAIL`, `$${client._bind(this.email)}`]) })
       .a({ n: `text`, v: `Trigger Email` });
     const telephone_form = layout.ele({ n: `SimpleForm`, ns: `form` }).a({ n: `title`, v: `Trigger Telephone` });
     telephone_form.tag(`Label`).a({ n: `text`, v: `Telephone` }).a({ n: `labelFor`, v: `inputTel` });
@@ -77,7 +77,7 @@ class z2ui5_cl_smp_app_316 extends z2ui5_if_app {
       .a({ n: `value`, v: client._bind(this.phone) })
       .a({ n: `class`, v: `sapUiSmallMarginBottom` });
     telephone_form.tag(`Button`)
-      .a({ n: `press`, v: client.follow_up_action(client.cs_event.urlhelper, [`TRIGGER_TEL`, `$${client._bind(this.phone)}`]) })
+      .a({ n: `press`, v: client.follow_up_action_result(client.cs_event.urlhelper, [`TRIGGER_TEL`, `$${client._bind(this.phone)}`]) })
       .a({ n: `text`, v: `Trigger Telephone` });
     const mobile_form = layout.ele({ n: `SimpleForm`, ns: `form` }).a({ n: `title`, v: `Trigger SMS` });
     mobile_form.tag(`Label`).a({ n: `text`, v: `Number` }).a({ n: `labelFor`, v: `inputNumber` });
@@ -88,7 +88,7 @@ class z2ui5_cl_smp_app_316 extends z2ui5_if_app {
       .a({ n: `value`, v: client._bind(this.mobile) })
       .a({ n: `class`, v: `sapUiSmallMarginBottom` });
     mobile_form.tag(`Button`)
-      .a({ n: `press`, v: client.follow_up_action(client.cs_event.urlhelper, [`TRIGGER_SMS`, `$${client._bind(this.mobile)}`]) })
+      .a({ n: `press`, v: client.follow_up_action_result(client.cs_event.urlhelper, [`TRIGGER_SMS`, `$${client._bind(this.mobile)}`]) })
       .a({ n: `text`, v: `Trigger SMS` });
     const url_form = layout.ele({ n: `SimpleForm`, ns: `form` }).a({ n: `title`, v: `Redirect` });
     url_form.tag(`Label`).a({ n: `text`, v: `URL` }).a({ n: `labelFor`, v: `inputUrl` });
@@ -99,7 +99,7 @@ class z2ui5_cl_smp_app_316 extends z2ui5_if_app {
       .a({ n: `value`, v: client._bind(this.url.url, { name: `url-url` }) })
       .a({ n: `class`, v: `sapUiSmallMarginBottom` });
     url_form.tag(`Button`)
-      .a({ n: `press`, v: client.follow_up_action(client.cs_event.urlhelper, [`REDIRECT`, `$${client._bind(this.url)}`]) })
+      .a({ n: `press`, v: client.follow_up_action_result(client.cs_event.urlhelper, [`REDIRECT`, `$${client._bind(this.url)}`]) })
       .a({ n: `text`, v: `Redirect` });
     client.view_display(page.stringify());
     client.follow_up_action(z2ui5_if_client.cs_event.set_title, [`URL Helper Sample`]);

@@ -1,5 +1,7 @@
 
 class z2ui5_cl_ui5_view_builder {
+  static gv_escape_specials = ``;
+
   name = ``;
   prefix = ``;
   t_pair = [];
@@ -32,10 +34,11 @@ class z2ui5_cl_ui5_view_builder {
     return result;
   }
 
-  a({ n, v = ``, b } = {}) {
+  a({ n, v, b } = {}) {
     let result = null;
     let target;
     if (!(!z2ui5_cl_util.abap_is_initial(this.name) || !z2ui5_cl_util.abap_is_initial(this.t_child))) throw new Error(`ASSERT failed`);
+    if (!(v !== undefined || b !== undefined)) throw new Error(`ASSERT failed`);
     let val = z2ui5_cl_util.abap_copy(v);
     if (b !== undefined) {
       if (!(z2ui5_cl_util.abap_is_initial(v))) throw new Error(`ASSERT failed`);
@@ -75,12 +78,13 @@ class z2ui5_cl_ui5_view_builder {
       return result;
     }
     const qname = (z2ui5_cl_util.abap_is_initial(this.prefix) ? this.name : `${this.prefix}:${this.name}`);
-    let attrs = ``;
+    let lt_attr = [];
     sy_tabix = 0;
     for (const pair of this.t_pair) {
       sy_tabix++;
-      attrs = `${attrs} ${pair.n}="${this.xml_escape({ val: pair.v })}"`;
+      lt_attr.push(z2ui5_cl_util.abap_copy(` ${pair.n}="${this.xml_escape({ val: pair.v })}"`));
     }
+    const attrs = lt_attr.join(``);
     if (z2ui5_cl_util.abap_is_initial(this.t_child)) {
       result = `<${qname}${attrs}/>`;
     } else {
@@ -91,6 +95,14 @@ class z2ui5_cl_ui5_view_builder {
 
   xml_escape({ val } = {}) {
     let result = ``;
+    if (z2ui5_cl_util.abap_is_initial(z2ui5_cl_ui5_view_builder.gv_escape_specials)) {
+      z2ui5_cl_ui5_view_builder.gv_escape_specials = `&<>"` + z2ui5_cl_ui5_util_context.cv_char_util_newline + String(z2ui5_cl_ui5_util_context.cv_char_util_cr_lf)
+        .substr(0, 1) + z2ui5_cl_ui5_util_context.cv_char_util_horizontal_tab;
+    }
+    if (![...String(val)].some(($c) => String(z2ui5_cl_ui5_view_builder.gv_escape_specials).includes($c))) {
+      result = z2ui5_cl_util.abap_tab_assign(result, z2ui5_cl_util.abap_copy(val));
+      return result;
+    }
     result = z2ui5_cl_util.abap_tab_assign(result, z2ui5_cl_util.abap_copy(val));
     result = result.replaceAll(`&`, `&amp;`);
     result = result.replaceAll(`<`, `&lt;`);

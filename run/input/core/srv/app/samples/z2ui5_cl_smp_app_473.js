@@ -5,9 +5,7 @@ class z2ui5_cl_smp_app_473 extends z2ui5_if_app {
 
   async main(client) {
     this.client = client;
-    if (client.check_on_init()) {
-      this.view_display();
-    } else if (client.check_on_navigated()) {
+    if (client.check_on_navigated()) {
       this.view_display();
     }
   }
@@ -30,7 +28,7 @@ class z2ui5_cl_smp_app_473 extends z2ui5_if_app {
       .a({ n: `type`, v: `Information` })
       .a({ n: `showIcon`, b: true })
       .a({ n: `class`, v: `sapUiSmallMargin` });
-    const menu_selected = this.client.follow_up_action(z2ui5_if_client.cs_event.control_global, [`MESSAGE_TOAST`, `show`, `Action triggered on item: {0}`, `$controller.textPath(\${$parameters>/item})`]);
+    const menu_selected = this.client.follow_up_action_result(z2ui5_if_client.cs_event.control_global, [`MESSAGE_TOAST`, `show`, `Action triggered on item: {0}`, `$controller.textPath(\${$parameters>/item})`]);
     const menu = page.ele(`HBox`)
       .a({ n: `class`, v: `sapUiSmallMargin` })
       .ele(`MenuButton`)

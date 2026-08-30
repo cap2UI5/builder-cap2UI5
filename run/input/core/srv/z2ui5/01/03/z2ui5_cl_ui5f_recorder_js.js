@@ -2,120 +2,34 @@
 class z2ui5_cl_ui5f_recorder_js {
   static get() {
     let result = ``;
-    result = `// Roundtrip recorder of the developer tools.` + `
-` + `//` + `
-` + `// SELF-CONTAINED BY DESIGN: this module is the ONLY place that knows how` + `
-` + `// roundtrip history is collected. It observes the framework from the` + `
-` + `// outside - through the public callback arrays (Lib.registerCallback) and` + `
-` + `// the browser's Resource Timing API - and never asks the framework to` + `
-` + `// carry anything for it. Server.js, View1.controller.js, AppState.js and` + `
-` + `// Lib.js contain no recorder code and no recorder-shaped hooks; the whole` + `
-` + `// feature can be deleted by removing this file and its tabs in` + `
-` + `// devtools/DeveloperTools.js - devtools/DevTools.js is what` + `
-` + `// installs it, and that is the framework's only entry point here.` + `
-` + `//` + `
-` + `// Two tiers, because they cost very different amounts:` + `
-` + `//` + `
-` + `//  TIER 1 - metadata, always on. One small record per roundtrip: timing,` + `
-` + `//    byte sizes, event name, draft id, action counts. A record is a handful` + `
-` + `//    of numbers and short strings, and MAX_RECORDS caps the ring - the` + `
-` + `//    whole history stays in the tens of kilobytes, the same order of` + `
-` + `//    magnitude the error log (Lib.MAX_ERRORS) already keeps.` + `
-` + `//` + `
-` + `//  TIER 2 - payloads, opt-in. The request body and the response object of` + `
-` + `//    each roundtrip. These are the expensive part: a model with a few` + `
-` + `//    thousand table rows is megabytes of parsed objects, so retaining 50 of` + `
-` + `//    them is not something a production session may pay for silently. Off` + `
-` + `//    unless the developer switches it on (sessionStorage, so it survives a` + `
-` + `//    reload), and capped by a BYTE BUDGET rather than a record count - a` + `
-` + `//    "last 20 roundtrips" limit is meaningless when one entry weighs 8 MB.` + `
-` + `//` + `
-` + `// Why payloads can be kept as plain REFERENCES (no structuredClone):` + `
-` + `// actions/Slots.js hands the response's MODEL object straight to` + `
-` + `// JSONModel.setData(), so the live model data IS response.MODEL and the` + `
-` + `// binding mutates it in place. That only lasts until the NEXT` + `
-` + `// roundtrip calls setData() with the new response's MODEL - from that` + `
-` + `// moment the old object is unbound and frozen. So every record except the` + `
-` + `// newest is stable, and the newest one is the current state the existing` + `
-` + `// tabs show anyway. Retention is the only cost; there is no copying.` + `
-` + `sap.ui.define(["z2ui5/core/AppState", "z2ui5/core/Lib"], (AppState, Lib) => {` + `
+    result = `sap.ui.define(["z2ui5/core/AppState", "z2ui5/core/Lib"], (AppState, Lib) => {` + `
 ` + `  "use strict";` + `
 ` + `` + `
-` + `  // Tier 1 ring size. 50 records of metadata are far below the error log's` + `
-` + `  // footprint and cover a long debugging session.` + `
 ` + `  const MAX_RECORDS = 50;` + `
 ` + `` + `
-` + `  // Tier 2 ceiling, in bytes of measured payload (see recordBytes below).` + `
-` + `  // Oldest payloads are dropped first; their metadata records survive, so` + `
-` + `  // the history stays complete and only the deep content thins out.` + `
 ` + `  const PAYLOAD_BUDGET_BYTES = 2 * 1024 * 1024;` + `
 ` + `` + `
-` + `  // sessionStorage key of the Tier 2 opt-in. sessionStorage (not local)` + `
-` + `  // so the switch survives a reload but not the tab - a developer cannot` + `
-` + `  // leave payload recording on for a colleague by accident.` + `
 ` + `  const PAYLOAD_FLAG_KEY = "z2ui5.devtools.recordPayloads";` + `
 ` + `` + `
-` + `  // sessionStorage key of the metadata carried across a page reload, and` + `
-` + `  // how many records travel. When an app dies and the user reloads, the` + `
-` + `  // evidence is exactly what a fresh page throws away - so the METADATA` + `
-` + `  // (never the payloads, which is what makes this affordable) is written` + `
-` + `  // on pagehide and read back on install, flagged as a previous load.` + `
 ` + `  const RELOAD_KEY = "z2ui5.devtools.history";` + `
 ` + `  const RELOAD_MAX_RECORDS = 30;` + `
 ` + `` + `
-` + `  // A network observation is paired with the render that followed it only` + `
-` + `  // if the render came after the response ended. Roundtrips whose entry is` + `
-` + `  // older than this (and never got a render) are flushed as "no render" -` + `
-` + `  // an error response, an abort, or a superseded parallel request.` + `
 ` + `  const UNPAIRED_FLUSH_MS = 5000;` + `
 ` + `` + `
-` + `  // Backend messages are kept as TIER 1 metadata, not as payloads: the` + `
-` + `  // text of a toast or message box is a short string, and "what did the` + `
-` + `  // app tell the user three roundtrips ago" is exactly the kind of` + `
-` + `  // question the history exists for. Capped so a pathological message` + `
-` + `  // cannot grow a record without bound.` + `
 ` + `  const MAX_MESSAGE_CHARS = 500;` + `
 ` + `` + `
-` + `  // Rendering caps for the history / diff text output.` + `
 ` + `  const MAX_DIFF_ENTRIES = 200;` + `
 ` + `  const MAX_DIFF_DEPTH = 12;` + `
 ` + `  const MAX_DIFF_VALUE_CHARS = 120;` + `
 ` + `` + `
-` + `  // Oldest first. Each entry:` + `
-` + `  //   seq          running number, 1-based` + `
-` + `  //   ts           wall-clock ISO timestamp of the render` + `
-` + `  //   event        the EVENT name the request carried ("" for app start)` + `
-` + `  //   idSent       draft id sent with the request` + `
-` + `  //   idReceived   draft id the response returned` + `
-` + `  //   app          app class name the response named` + `
-` + `  //   reqBytes     serialized request size, null when not measured` + `
-` + `  //   respBytes    decoded response size, null when Resource Timing is absent` + `
-` + `  //   backendMs    request start -> response end (network + ABAP)` + `
-` + `  //   renderMs     response end -> rendered, null when unpaired` + `
-` + `  //   totalMs      request start -> rendered` + `
-` + `  //   systemActions / customActions   action counts of the response` + `
-` + `  //   rendered     false for a roundtrip that never reached the render phase` + `
-` + `  //   request / response   Tier 2 payload references, null when not kept` + `
 ` + `  let records = [];` + `
 ` + `` + `
-` + `  // Running number handed to the next record. Not records.length: the ring` + `
-` + `  // drops old entries, and the numbers must stay stable across evictions.` + `
 ` + `  let nextSeq = 1;` + `
 ` + `` + `
-` + `  // Network observations not yet paired with a render, oldest first. Filled` + `
-` + `  // by the PerformanceObserver and the synchronous sweep, drained by` + `
-` + `  // onAfterRendering. Each: { start, end, bytes }.` + `
 ` + `  let unpaired = [];` + `
 ` + `` + `
-` + `  // High-water mark of consumed Resource Timing entries. The observer and` + `
-` + `  // the sweep both feed \`unpaired\`, so the same entry must not be taken` + `
-` + `  // twice; entries arrive in chronological order from both sources, which` + `
-` + `  // makes a single startTime watermark enough.` + `
 ` + `  let lastEntryStart = -1;` + `
 ` + `` + `
-` + `  // Sum of reqBytes + respBytes over the records that still hold payloads.` + `
-` + `  // The measured sizes double as the budget accounting - no separate` + `
-` + `  // estimation pass is needed.` + `
 ` + `  let payloadBytes = 0;` + `
 ` + `` + `
 ` + `  let observer = null;` + `
@@ -123,10 +37,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `  let afterRenderingHook = null;` + `
 ` + `  let onPageHide = null;` + `
 ` + `` + `
-` + `  // Absolute form of the backend endpoint, so it can be compared against` + `
-` + `  // the absolute names Resource Timing reports. Recomputed per call: the` + `
-` + `  // url global is set by the backend page and may not exist yet at install` + `
-` + `  // time. Returns "" when unknown or unparsable.` + `
 ` + `  function backendUrl() {` + `
 ` + `    const url = AppState.getGlobal("url");` + `
 ` + `    if (!url) return "";` + `
@@ -143,31 +53,17 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `      : 0;` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Accept one Resource Timing entry as a roundtrip observation. Entries` + `
-` + `  // older than the watermark were already taken (the observer and the sweep` + `
-` + `  // overlap on purpose - see lastEntryStart).` + `
 ` + `  function acceptEntry(entry) {` + `
 ` + `    if (!entry || entry.startTime <= lastEntryStart) return;` + `
 ` + `    lastEntryStart = entry.startTime;` + `
 ` + `    unpaired.push({` + `
 ` + `      start: entry.startTime,` + `
 ` + `      end: entry.responseEnd || entry.startTime,` + `
-` + `      // decodedBodySize is the uncompressed payload - the number that` + `
-` + `      // answers "is this response too big", which transferSize (compressed,` + `
-` + `      // 0 from cache) does not. 0 means "not exposed", reported as null.` + `
+` + `` + `
 ` + `      bytes: entry.decodedBodySize || null,` + `
 ` + `    });` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Pull any Resource Timing entries for the backend endpoint that the` + `
-` + `  // observer has not delivered yet. The observer's callback is queued as a` + `
-` + `  // task and may well run AFTER the render it belongs to, so the render` + `
-` + `  // path sweeps synchronously first and ordering stops mattering.` + `
-` + `  //` + `
-` + `  // The sweep alone would not be enough: once the browser's resource buffer` + `
-` + `  // is full it silently drops NEW entries, which a long-running SPA reaches.` + `
-` + `  // PerformanceObserver delivery is not bound by that buffer, so the two` + `
-` + `  // together cover both the ordering and the overflow case.` + `
 ` + `  function sweepEntries() {` + `
 ` + `    if (typeof performance === "undefined" || !performance.getEntriesByName) {` + `
 ` + `      return;` + `
@@ -180,13 +76,15 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    } catch {` + `
 ` + `      return;` + `
 ` + `    }` + `
-` + `    for (const entry of entries) acceptEntry(entry);` + `
+` + `` + `
+` + `    const fresh = [];` + `
+` + `    for (let i = entries.length - 1; i >= 0; i -= 1) {` + `
+` + `      if (entries[i].startTime <= lastEntryStart) break;` + `
+` + `      fresh.push(entries[i]);` + `
+` + `    }` + `
+` + `    for (let i = fresh.length - 1; i >= 0; i -= 1) acceptEntry(fresh[i]);` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Take the network observation belonging to a render that happened at` + `
-` + `  // \`tRendered\`: the newest one that finished before it. Everything older` + `
-` + `  // than that never rendered - those are flushed as their own records so a` + `
-` + `  // failed or superseded roundtrip stays visible in the history.` + `
 ` + `  function takeNetworkFor(tRendered) {` + `
 ` + `    let index = -1;` + `
 ` + `    for (let i = unpaired.length - 1; i >= 0; i--) {` + `
@@ -203,9 +101,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    return match;` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Flush network observations that never got a render and are old enough` + `
-` + `  // that none is coming. Called from the render path and when the history` + `
-` + `  // is read, so a failing roundtrip shows up without needing a next one.` + `
 ` + `  function flushStaleUnpaired() {` + `
 ` + `    if (!unpaired.length) return;` + `
 ` + `    const cutoff = now() - UNPAIRED_FLUSH_MS;` + `
@@ -215,10 +110,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    for (const entry of stale) pushUnrendered(entry);` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // A roundtrip observed on the wire that never reached the render phase:` + `
-` + `  // an error response, an aborted request, or a parallel request whose` + `
-` + `  // result was discarded as stale. Worth a record of its own - these are` + `
-` + `  // exactly the roundtrips a developer is looking for.` + `
 ` + `  function pushUnrendered(entry) {` + `
 ` + `    pushRecord({` + `
 ` + `      ts: new Date().toISOString(),` + `
@@ -240,11 +131,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    });` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Pull the user-visible backend messages out of a response's app action` + `
-` + `  // list. A message travels as a whitelisted global call` + `
-` + `  // ["CONTROL_GLOBAL", "MESSAGE_TOAST"|"MESSAGE_BOX", <method>, <text>, ...]` + `
-` + `  // (see core/actions/ControlCall.js); the legacy raw-string entries in` + `
-` + `  // T_CUSTOM carry no structured message and are skipped.` + `
 ` + `  function extractMessages(response) {` + `
 ` + `    const custom = response?.S_FRONT?.S_ACTION?.T_CUSTOM;` + `
 ` + `    if (!Array.isArray(custom)) return [];` + `
@@ -262,17 +148,11 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    return out;` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Measured weight of a record's retained payloads. Sizes that were not` + `
-` + `  // measured count as 0 - the budget then errs towards keeping more, which` + `
-` + `  // is the harmless direction for a diagnostic buffer.` + `
 ` + `  function recordBytes(record) {` + `
 ` + `    if (!record.request && !record.response) return 0;` + `
 ` + `    return (record.reqBytes || 0) + (record.respBytes || 0);` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Drop payloads from the oldest records until the retained set fits the` + `
-` + `  // budget. The records themselves stay - the history keeps showing that` + `
-` + `  // roundtrip 3 took 900 ms and sent 4 MB, only its content is gone.` + `
 ` + `  function enforcePayloadBudget() {` + `
 ` + `    for (const record of records) {` + `
 ` + `      if (payloadBytes <= PAYLOAD_BUDGET_BYTES) return;` + `
@@ -295,9 +175,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    enforcePayloadBudget();` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // True when the developer switched Tier 2 on. Guarded: sessionStorage` + `
-` + `  // throws in some embedded/privacy configurations, and a diagnostic tool` + `
-` + `  // must never be the thing that breaks the app.` + `
 ` + `  function isRecordingPayloads() {` + `
 ` + `    try {` + `
 ` + `      return window.sessionStorage?.getItem(PAYLOAD_FLAG_KEY) === "X";` + `
@@ -313,9 +190,7 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `      } else {` + `
 ` + `        window.sessionStorage?.removeItem(PAYLOAD_FLAG_KEY);` + `
 ` + `      }` + `
-` + `    } catch {` + `
-` + `      // storage unavailable - the switch then simply does not persist` + `
-` + `    }` + `
+` + `    } catch {}` + `
 ` + `    if (!enabled) dropAllPayloads();` + `
 ` + `  }` + `
 ` + `` + `
@@ -327,14 +202,10 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    payloadBytes = 0;` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Serialized size of the request body. This is the one number the` + `
-` + `  // recorder cannot get for free: Resource Timing exposes no request body` + `
-` + `  // size, so the body is serialized a second time here (Server.readHttp` + `
-` + `  // does the first one for the actual send). It is a DELTA - only the model` + `
-` + `  // paths the user edited travel - so the common case is a few hundred` + `
-` + `  // bytes. Returns null if it cannot be serialized.` + `
 ` + `  function measureRequest(oBody) {` + `
 ` + `    if (!oBody) return null;` + `
+` + `    const known = AppState.state.lastRequestBytes;` + `
+` + `    if (typeof known === "number") return known;` + `
 ` + `    try {` + `
 ` + `      return JSON.stringify({ value: oBody }).length;` + `
 ` + `    } catch {` + `
@@ -342,11 +213,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    }` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Completes one roundtrip: called once the response has been processed` + `
-` + `  // and its view is rendered (the onAfterRendering callback array, which` + `
-` + `  // View1._processAfterRendering runs at the end of every roundtrip -` + `
-` + `  // including the app start and Back/Forward route restores, which never` + `
-` + `  // pass through eB and therefore have no other observable entry point).` + `
 ` + `  function onAfterRendering() {` + `
 ` + `    try {` + `
 ` + `      const state = AppState.state;` + `
@@ -371,24 +237,19 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `        totalMs: net ? Math.round(tRendered - net.start) : null,` + `
 ` + `        systemActions: sFront?.S_ACTION?.T_SYSTEM?.length || 0,` + `
 ` + `        customActions: sFront?.S_ACTION?.T_CUSTOM?.length || 0,` + `
-` + `        // Tier 1 on purpose - see MAX_MESSAGE_CHARS.` + `
+` + `` + `
 ` + `        messages: extractMessages(response),` + `
 ` + `        rendered: true,` + `
-` + `        // Plain references, never clones - see the module header for why` + `
-` + `        // that is safe and why it costs nothing but retention.` + `
+` + `` + `
 ` + `        request: keepPayloads ? state.oBody : null,` + `
 ` + `        response: keepPayloads ? response : null,` + `
 ` + `      });` + `
 ` + `      flushStaleUnpaired();` + `
 ` + `    } catch (e) {` + `
-` + `      // The recorder is a diagnostic aid; it may never take the app down.` + `
 ` + `      Lib.logError("DevTools Recorder: onAfterRendering failed", e);` + `
 ` + `    }` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Write the metadata of the newest records away for the next page load.` + `
-` + `  // Payload references are dropped on purpose: they are the expensive part` + `
-` + `  // and would not survive serialization usefully anyway.` + `
 ` + `  function persist() {` + `
 ` + `    try {` + `
 ` + `      const slim = records.slice(-RELOAD_MAX_RECORDS).map((record) => {` + `
@@ -399,14 +260,9 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `      });` + `
 ` + `      if (!slim.length) return;` + `
 ` + `      window.sessionStorage?.setItem(RELOAD_KEY, JSON.stringify(slim));` + `
-` + `    } catch {` + `
-` + `      // storage full or unavailable - the history simply does not survive` + `
-` + `    }` + `
-`;
-    result = result + `  }` + `
+` + `    } catch {}` + `
+` + `  }` + `
 ` + `` + `
-` + `  // Adopt what the previous page load left behind, oldest first, so the` + `
-` + `  // history reads as one timeline across the reload.` + `
 ` + `  function restore() {` + `
 ` + `    let stored;` + `
 ` + `    try {` + `
@@ -420,8 +276,7 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `      const parsed = JSON.parse(stored);` + `
 ` + `      if (!Array.isArray(parsed)) return;` + `
 ` + `      records = parsed.slice(-RELOAD_MAX_RECORDS);` + `
-` + `      // Continue the numbering after the restored ones so the two halves` + `
-` + `      // of the timeline cannot collide.` + `
+` + `` + `
 ` + `      nextSeq = (records[records.length - 1]?.seq || 0) + 1;` + `
 ` + `    } catch {` + `
 ` + `      records = [];` + `
@@ -435,9 +290,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    afterRenderingHook = onAfterRendering;` + `
 ` + `    Lib.registerCallback("onAfterRendering", afterRenderingHook);` + `
 ` + `` + `
-` + `    // "pagehide", not "beforeunload" - same reasoning as Component.js: it` + `
-` + `    // is the event that fires reliably, iOS Safari included. A browser` + `
-` + `    // killed outright loses the history, which is the accepted limit here.` + `
 ` + `    onPageHide = persist;` + `
 ` + `    window.addEventListener("pagehide", onPageHide);` + `
 ` + `` + `
@@ -450,12 +302,9 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `          if (entry.name === url) acceptEntry(entry);` + `
 ` + `        }` + `
 ` + `      });` + `
-` + `      // buffered: entries recorded before this observer existed (the app` + `
-` + `      // start roundtrip fires before Component.init finishes) are replayed.` + `
+` + `` + `
 ` + `      observer.observe({ type: "resource", buffered: true });` + `
 ` + `    } catch {` + `
-` + `      // No resource observation available - the history still records` + `
-` + `      // every roundtrip, only without timing and response sizes.` + `
 ` + `      observer = null;` + `
 ` + `    }` + `
 ` + `  }` + `
@@ -472,9 +321,7 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    if (observer) {` + `
 ` + `      try {` + `
 ` + `        observer.disconnect();` + `
-` + `      } catch {` + `
-` + `        // already gone` + `
-` + `      }` + `
+` + `      } catch {}` + `
 ` + `      observer = null;` + `
 ` + `    }` + `
 ` + `    records = [];` + `
@@ -488,12 +335,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    flushStaleUnpaired();` + `
 ` + `    return records;` + `
 ` + `  }` + `
-` + `` + `
-` + `  // ------------------------------------------------------------------` + `
-` + `  // Text rendering for the developer tools tabs. Plain text rather than a` + `
-` + `  // control tree: it drops straight into the existing CodeEditor and into` + `
-` + `  // the Export blob, so one implementation serves both.` + `
-` + `  // ------------------------------------------------------------------` + `
 ` + `` + `
 ` + `  function pad(value, width, right) {` + `
 ` + `    const text = value === null || value === undefined ? "-" : String(value);` + `
@@ -513,19 +354,11 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    return ms === null || ms === undefined ? "-" : \`\${ms} ms\`;` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Short form of a draft id: the ids are 32-character UUIDs and only the` + `
-` + `  // tail is needed to tell two of them apart in a list.` + `
 ` + `  function shortId(id) {` + `
 ` + `    if (!id) return "-";` + `
 ` + `    return id.length > 8 ? \`..\${id.slice(-6)}\` : id;` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // The app navigation as OBSERVED in this session. The real draft chain` + `
-` + `  // (id_prev / id_prev_app_stack) lives in the backend and never reaches` + `
-` + `  // the browser, but every app switch is visible here: the response names` + `
-` + `  // its app, so a change between two consecutive records is a navigation.` + `
-` + `  // Answers "how did I get here" and, with the draft ids, why` + `
-` + `  // nav_app_leave( ) returns where it does.` + `
 ` + `  function navigationLines(list) {` + `
 ` + `    const hops = [];` + `
 ` + `    let previous = null;` + `
@@ -554,10 +387,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    return out;` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Aggregate the recorded roundtrips into the handful of numbers that` + `
-` + `  // answer "is this app slow, and where". A per-row table alone does not:` + `
-` + `  // spotting that the average backend time is fine but ONE event is a` + `
-` + `  // second means reading 50 rows by eye.` + `
 ` + `  function summaryLines(list) {` + `
 ` + `    const timed = list.filter((r) => r.backendMs !== null);` + `
 ` + `    if (!timed.length) return [];` + `
@@ -573,7 +402,8 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    const sized = list.filter((r) => r.respBytes !== null);` + `
 ` + `    if (sized.length) {` + `
 ` + `      const biggest = sized.reduce((a, b) =>` + `
-` + `        b.respBytes > a.respBytes ? b : a,` + `
+`;
+    result = result + `        b.respBytes > a.respBytes ? b : a,` + `
 ` + `      );` + `
 ` + `      const total = sized.reduce((sum, r) => sum + r.respBytes, 0);` + `
 ` + `      out.push(` + `
@@ -629,8 +459,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    lines.push("-".repeat(118));` + `
 ` + `` + `
 ` + `    for (const record of list) {` + `
-` + `      // ISO timestamp -> "HH:MM:SS.mmm", the part that matters when` + `
-` + `      // correlating with a backend trace.` + `
 ` + `      const time = record.ts.slice(11, 23);` + `
 ` + `      const actions = \`\${record.systemActions}/\${record.customActions}\`;` + `
 ` + `      let payload = "-";` + `
@@ -677,10 +505,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    return lines.join("\\n");` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // ------------------------------------------------------------------` + `
-` + `  // Model diff between the two most recent recorded responses.` + `
-` + `  // ------------------------------------------------------------------` + `
-` + `` + `
 ` + `  function isPlainObject(value) {` + `
 ` + `    return value !== null && typeof value === "object" && !Array.isArray(value);` + `
 ` + `  }` + `
@@ -704,10 +528,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    return text;` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Walk two model trees in parallel and collect the differing paths.` + `
-` + `  // Arrays are compared by index - a table row inserted at the top does` + `
-` + `  // report every following row as changed, which is the honest answer for` + `
-` + `  // a model the backend rebuilds wholesale anyway.` + `
 ` + `  function collectDiff(before, after, path, out, depth) {` + `
 ` + `    if (out.length >= MAX_DIFF_ENTRIES) return;` + `
 ` + `    if (before === after) return;` + `
@@ -746,25 +566,10 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    out.push({ path, type: "changed", before, after });` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // ------------------------------------------------------------------` + `
-` + `  // View XML diff between the two most recent responses that rebuilt a` + `
-` + `  // slot. The model diff answers "what data changed"; this answers "why` + `
-` + `  // does the layout look different", which is the other half.` + `
-` + `  // ------------------------------------------------------------------` + `
-` + `` + `
-` + `  // Lines compared before the diff gives up - a generated view can be` + `
-` + `  // thousands of lines and this walk is deliberately cheap.` + `
 ` + `  const MAX_DIFF_LINES = 4000;` + `
 ` + `` + `
-` + `  // How far ahead the walk looks for a line to resync on. A view change is` + `
-` + `  // local (an inserted control, a changed attribute), so a small window` + `
-` + `  // finds the anchor; a wholesale rebuild resyncs on nothing and is` + `
-` + `  // reported as a full replacement, which is the honest answer for it.` + `
 ` + `  const DIFF_LOOKAHEAD = 25;` + `
 ` + `` + `
-` + `  // The XML a response displayed into \`slotKey\`, or "" when it rebuilt no` + `
-` + `  // such slot. Shape per the backend's own unit tests:` + `
-` + `  // ["VIEW_SLOTS","display","MAIN","<View/>"].` + `
 ` + `  function displayedXml(response, slotKey) {` + `
 ` + `    const system = response?.S_FRONT?.S_ACTION?.T_SYSTEM;` + `
 ` + `    if (!Array.isArray(system)) return "";` + `
@@ -777,9 +582,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    return "";` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // Line diff with a bounded resync window. Not an LCS: a full one is` + `
-` + `  // quadratic, and for view XML - where edits are local - a lookahead` + `
-` + `  // walk produces the same reading at a fraction of the cost.` + `
 ` + `  function diffLines(beforeText, afterText) {` + `
 ` + `    const a = beforeText.split("\\n").slice(0, MAX_DIFF_LINES);` + `
 ` + `    const b = afterText.split("\\n").slice(0, MAX_DIFF_LINES);` + `
@@ -803,8 +605,7 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `        ) {` + `
 ` + `          addedRun = k;` + `
 ` + `        }` + `
-`;
-    result = result + `        if (` + `
+` + `        if (` + `
 ` + `          removedRun < 0 &&` + `
 ` + `          j < b.length &&` + `
 ` + `          i + k < a.length &&` + `
@@ -825,7 +626,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `        }` + `
 ` + `        i += removedRun;` + `
 ` + `      } else {` + `
-` + `        // nothing to resync on - report the pair as a replacement` + `
 ` + `        if (i < a.length) {` + `
 ` + `          out.push({ type: "-", line: a[i], number: i + 1 });` + `
 ` + `          i += 1;` + `
@@ -839,7 +639,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    return out;` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // The two most recent records whose response rebuilt \`slotKey\`.` + `
 ` + `  function lastTwoViews(slotKey) {` + `
 ` + `    const withView = records` + `
 ` + `      .map((record) => ({` + `
@@ -859,9 +658,7 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `        "view XML of the two most recently recorded rebuilds."` + `
 ` + `      );` + `
 ` + `    }` + `
-` + `    // Only MAIN: it is the slot a roundtrip normally rebuilds, and a` + `
-` + `    // popup/popover diff would compare two different dialogs more often` + `
-` + `    // than two versions of one.` + `
+` + `` + `
 ` + `    const pair = lastTwoViews("MAIN");` + `
 ` + `    if (!pair) {` + `
 ` + `      return (` + `
@@ -902,15 +699,10 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    return out.join("\\n");` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // The backend sends a view as one long line, which would make every diff` + `
-` + `  // a single "everything changed". Break it at tag boundaries so the walk` + `
-` + `  // has lines to anchor on. Deliberately not the dialog's XSLT prettifier:` + `
-` + `  // this must not depend on a DOM.` + `
 ` + `  function prettifyForDiff(xml) {` + `
 ` + `    return String(xml).replace(/></g, ">\\n<");` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // The two most recent records that actually carry a response payload.` + `
 ` + `  function lastTwoResponses() {` + `
 ` + `    const withPayload = records.filter((record) => record.response);` + `
 ` + `    if (withPayload.length < 2) return null;` + `
@@ -972,13 +764,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    return header.join("\\n");` + `
 ` + `  }` + `
 ` + `` + `
-` + `  // The recorded history as JSON, for download. With payload recording on` + `
-` + `  // this carries the actual request/response bodies, which is what makes a` + `
-` + `  // bug reproducible for someone who cannot click through the app - the` + `
-` + `  // shareable half of "record and replay". Replaying it back INTO a system` + `
-` + `  // is deliberately not offered: the recorded requests reference draft ids` + `
-` + `  // that only exist in the session that produced them, and re-sending them` + `
-` + `  // would drive real backend state.` + `
 ` + `  function exportJson() {` + `
 ` + `    const payload = {` + `
 ` + `      exportedAt: new Date().toISOString(),` + `
@@ -988,8 +773,6 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    try {` + `
 ` + `      return JSON.stringify(payload, null, 2);` + `
 ` + `    } catch {` + `
-` + `      // A payload that cannot be serialized must not lose the whole` + `
-` + `      // export - fall back to the metadata, which is always plain data.` + `
 ` + `      const metaOnly = records.map((record) => {` + `
 ` + `        const copy = { ...record };` + `
 ` + `        delete copy.request;` + `
@@ -1010,7 +793,7 @@ class z2ui5_cl_ui5f_recorder_js {
 ` + `    formatHistory,` + `
 ` + `    formatModelDiff,` + `
 ` + `    formatViewDiff,` + `
-` + `    // exposed for the unit specs` + `
+` + `` + `
 ` + `    _internals: { MAX_RECORDS, PAYLOAD_BUDGET_BYTES, PAYLOAD_FLAG_KEY },` + `
 ` + `  };` + `
 ` + `});` + `

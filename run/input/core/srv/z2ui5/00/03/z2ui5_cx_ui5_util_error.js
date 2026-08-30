@@ -11,13 +11,14 @@ class z2ui5_cx_ui5_util_error extends cx_no_check {
     try {
       lo_root = z2ui5_cl_util.abap_cast(val);
     } catch (error) {
-      lv_text = z2ui5_cl_util.abap_tab_assign(lv_text, z2ui5_cl_util.abap_copy(val));
+      if ((z2ui5_cl_ui5_util_context.rtti_check_printable({ val: val }) === true || z2ui5_cl_ui5_util_context.rtti_check_printable({ val: val }) === `X`)) {
+        lv_text = z2ui5_cl_util.abap_tab_assign(lv_text, z2ui5_cl_util.abap_copy(val));
+      }
     }
     super({ previous: (previous != null ? previous : lo_root) });
     this.textid = null;
     this.ms_error.x_root = lo_root;
     this.ms_error.text = z2ui5_cl_util.abap_tab_assign(this.ms_error.text, z2ui5_cl_util.abap_copy(lv_text));
-    this.ms_error.uuid = z2ui5_cl_ui5_util_context.uuid_get_c32();
   }
 
   get_text_own() {
@@ -94,12 +95,12 @@ class z2ui5_cx_ui5_util_error extends cx_no_check {
     let sy_tabix = 0;
     let lx_own;
     const lv_nl = z2ui5_cl_util.abap_copy(z2ui5_cl_ui5_util_context.cv_char_util_newline);
-    result = `[${index}] ${z2ui5_cl_ui5_util_context.rtti_get_classname_by_ref(val)}`;
+    result = `[${index}] ${z2ui5_cl_ui5_util_context.rtti_get_classname_by_ref({ val: val })}`;
     const lv_text = z2ui5_cx_ui5_util_error.get_text_own_by_x({ val: val });
     if (!z2ui5_cl_util.abap_is_initial(lv_text)) {
       result = result + lv_nl + `    text     : ${lv_text}`;
     }
-    const lv_position = z2ui5_cl_ui5_util_context.error_get_source_position(val);
+    const lv_position = z2ui5_cl_ui5_util_context.error_get_source_position({ val: val });
     if (!z2ui5_cl_util.abap_is_initial(lv_position)) {
       result = result + lv_nl + `    position : ${lv_position}`;
     }
@@ -108,10 +109,13 @@ class z2ui5_cx_ui5_util_error extends cx_no_check {
     }
     try {
       lx_own = (val);
+      if (z2ui5_cl_util.abap_is_initial(lx_own.ms_error.uuid)) {
+        lx_own.ms_error.uuid = z2ui5_cl_ui5_util_context.uuid_get_c32();
+      }
       result = result + lv_nl + `    id       : ${lx_own.ms_error.uuid}`;
     } catch (error) {
     }
-    const lt_attri = z2ui5_cl_ui5_util_context.error_get_attributes(val);
+    const lt_attri = z2ui5_cl_ui5_util_context.error_get_attributes({ val: val });
     sy_tabix = 0;
     for (const lr_attri of lt_attri) {
       sy_tabix++;
@@ -125,12 +129,12 @@ class z2ui5_cx_ui5_util_error extends cx_no_check {
     let sy_sysid = "";
     let sy_uname = "";
     let sy_mandt = "000";
-    let sy_langu = "E";
     let sy_datum = "";
     let sy_uzeit = "";
     let sy_host = "";
+    let sy_saprl = "OPEN";
     const lv_nl = z2ui5_cl_util.abap_copy(z2ui5_cl_ui5_util_context.cv_char_util_newline);
-    result = `--- context ---` + lv_nl + `    system   : ${sy_sysid} / client ${sy_mandt} / host ${sy_host} / release ${sy_saprl}` + lv_nl + `    user     : ${sy_uname} / language ${sy_langu}` + lv_nl + `    time     : ${sy_datum} ${sy_uzeit}`;
+    result = `--- context ---` + lv_nl + `    system   : ${sy_sysid} / release ${sy_saprl}` + lv_nl + `    time     : ${sy_datum} ${sy_uzeit}`;
     return result;
   }
 }

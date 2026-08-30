@@ -156,7 +156,7 @@ class z2ui5_cl_smp_app_012 extends z2ui5_if_app {
       .end()
       .ele(`buttons`)
       .tag(`Button`)
-      .a({ n: `press`, v: this.client.follow_up_action(this.client.cs_event.popup_close) })
+      .a({ n: `press`, v: this.client.follow_up_action_result(this.client.cs_event.popup_close) })
       .a({ n: `text`, v: `close` })
       .a({ n: `type`, v: `Emphasized` });
     this.client.popup_display(popup.stringify());

@@ -13,6 +13,7 @@ class z2ui5_cl_ui5f_preload {
 ` + `      "z2ui5/cc/Geolocation.js": function(){${z2ui5_cl_ui5f_geoloc_js.get()}},` + `
 ` + `      "z2ui5/cc/History.js": function(){${z2ui5_cl_ui5f_history_js.get()}},` + `
 ` + `      "z2ui5/cc/Info.js": function(){${z2ui5_cl_ui5f_info_js.get()}},` + `
+` + `      "z2ui5/cc/InputExt.js": function(){${z2ui5_cl_ui5f_inputext_js.get()}},` + `
 ` + `      "z2ui5/cc/LPTitle.js": function(){${z2ui5_cl_ui5f_lptitle_js.get()}},` + `
 ` + `      "z2ui5/cc/MessageManager.js": function(){${z2ui5_cl_ui5f_msgmgr_js.get()}},` + `
 ` + `      "z2ui5/cc/MultiInputExt.js": function(){${z2ui5_cl_ui5f_multiinp_js.get()}},` + `
@@ -101,6 +102,7 @@ const z2ui5_cl_ui5f_frontact_js = require("abap2UI5/z2ui5_cl_ui5f_frontact_js");
 const z2ui5_cl_ui5f_geoloc_js = require("abap2UI5/z2ui5_cl_ui5f_geoloc_js");
 const z2ui5_cl_ui5f_history_js = require("abap2UI5/z2ui5_cl_ui5f_history_js");
 const z2ui5_cl_ui5f_info_js = require("abap2UI5/z2ui5_cl_ui5f_info_js");
+const z2ui5_cl_ui5f_inputext_js = require("abap2UI5/z2ui5_cl_ui5f_inputext_js");
 const z2ui5_cl_ui5f_inspect_js = require("abap2UI5/z2ui5_cl_ui5f_inspect_js");
 const z2ui5_cl_ui5f_launchpd_js = require("abap2UI5/z2ui5_cl_ui5f_launchpd_js");
 const z2ui5_cl_ui5f_legacy_js = require("abap2UI5/z2ui5_cl_ui5f_legacy_js");

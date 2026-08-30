@@ -56,7 +56,6 @@ class z2ui5_cl_smp_app_061 extends z2ui5_if_app {
       .end();
     tab.ele(`items`)
       .ele(`ColumnListItem`)
-      .a({ n: `selected`, v: `{SELKZ}` })
       .ele(`cells`)
       .tag(`Input`)
       .a({ n: `value`, v: `{ID}` })

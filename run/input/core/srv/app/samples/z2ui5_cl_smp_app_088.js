@@ -43,7 +43,7 @@ class z2ui5_cl_smp_app_088 extends z2ui5_if_app {
       .a({ n: `class`, v: `sapUiSmallMargin` });
     page.ele(`IconTabHeader`)
       .a({ n: `selectedKey`, v: this.client._bind(this.mv_selected_key) })
-      .a({ n: `select`, v: this.client.follow_up_action(this.client.cs_event.control_by_id, [`NavCon`, `to`, `\${$parameters>/key}`]) })
+      .a({ n: `select`, v: this.client.follow_up_action_result(this.client.cs_event.control_by_id, [`NavCon`, `to`, `\${$parameters>/key}`]) })
       .a({ n: `mode`, v: `Inline` })
       .ele(`items`)
       .ele(`IconTabFilter`)
