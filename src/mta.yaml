@@ -151,4 +151,10 @@ build-parameters:
   - builder: custom
     commands:
     - npm ci
-    - npx cds build --production
+    # NOT a bare `cds build --production`: that stages gen/srv with the app's
+    # `"abap2UI5": "file:./core"` dependency but never copies core/ there, so
+    # the pushed module resolved abap2UI5 to a dangling symlink and died at
+    # startup with `Cannot find module 'abap2UI5/engine'`. build:production is
+    # `cds build --production` followed by scripts/vendor-core.js, which puts
+    # the vendored core next to the staged package.json.
+    - npm run build:production

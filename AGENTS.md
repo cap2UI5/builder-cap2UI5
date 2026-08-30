@@ -25,7 +25,7 @@ that push starts `update_cap`.
 
 | Path | What it is | Hand-edit? |
 |---|---|---|
-| `src/` | hand-written SOURCE of the CAP app: skeleton (`server.js`, `z2ui5-service.*`, `db/`, `mta.yaml`, `xs-security.json`), platform wiring (draft store → CDS entity `cap2ui5.z2ui5_t_01`, app discovery → `srv/app/`), the custom app `srv/app/z2ui5_cl_app_read_odata.js`, app `README.md`, `.devcontainer/`, `AGENTS.md` (published into the app repo) | **yes — app changes go here** |
+| `src/` | hand-written SOURCE of the CAP app: skeleton (`server.js`, `z2ui5-service.*`, `db/`, `mta.yaml`, `xs-security.json`), platform wiring (draft store → CDS entity `cap2ui5.z2ui5_t_01`, app discovery → `srv/app/`), the custom app `srv/app/z2ui5_cl_app_read_odata.js`, the production-build step `scripts/vendor-core.js`, app `README.md`, `.devcontainer/`, `AGENTS.md` (published into the app repo) | **yes — app changes go here** |
 | `run/input/core/` | mirror of builder-abap2UI5-js:`core/` (committed; upstream sha in `run/input/UPSTREAM_COMMIT`) | never — rewritten by `npm run mirror_core` |
 | `run/output/cap2UI5/` | the assembled app (gitignored staging; `node_modules` preserved across builds) | never |
 | `scripts/` | `mirror-core.js`, `assemble-cap.js`, `publish-cap.js` | yes |
@@ -107,3 +107,30 @@ back to HEAD instead of failing. Keep both properties if you touch it.
 - Keep the rewrite pairs in `assemble-cap.js` in sync with the dependency
   paths if you ever move `run/input/core` or the vendored `core/`.
 - The app's jest suite gates every publish; keep it green.
+- App dependency updates belong in `src/package.json` + `src/package-lock.json`
+  and nowhere else. The app repo is regenerated on every publish, so a bump
+  merged there is reverted by the next nightly — it happened to
+  `@cap-js/cds-test` (^1.0.2 in cap2UI5/cap2UI5#67, back to ^1.0.1 in the
+  publish commit two days later), which is why that repo's dependabot now
+  watches GitHub Actions only.
+
+## The production build (`npm run build:production`)
+
+`cds build --production` alone does not produce a startable module. It stages
+`gen/srv` with the app's `"abap2UI5": "file:./core"` dependency and never
+copies `core/` there, so the deployed module resolved the framework to a
+dangling symlink — `npm ci` creates it without checking the target, the
+archive builds, `cf deploy` succeeds, and the instance crash-loops on
+`Cannot find module 'abap2UI5/engine'`.
+
+`src/scripts/vendor-core.js` is the second half: it copies the vendored core
+into `gen/srv/core` and drops `openui5-dist` (611 MB of deprecated release
+tooling, 43 advisories, 3 critical) from the staged tree — the deployed
+server never serves `/resources`, xs-app.json routes it to the `ui5`
+destination. It bails out of that prune if the core ever declares a
+dependency other than `openui5-dist`, since the whole `core/node_modules/`
+subtree of the app lock is reachable only from that one package today.
+
+Gates: `src/test/production-build.test.js` in the app suite (so it runs on
+every PR and every publish) and the app repo's `deploy-check.yml`, which
+installs the staged module with `npm ci --omit=dev` and requires it.

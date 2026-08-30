@@ -4,9 +4,49 @@ updates:
     directory: /
     schedule:
       interval: weekly
-  # The CAP app's own dependencies live in src/ (@sap/cds, jest, mbt, …); the
-  # published app lock is regenerated from here, so keep this manifest current.
+
+  # The builder's own dev dependencies (eslint, jest). No ecosystem covered
+  # this manifest until 2026-08, so nothing here was ever proposed for update
+  # -- it had drifted a full eslint major behind and carried two high
+  # advisories that a routine bump cleared. The PR gate (test.yml: lint +
+  # assemble + the app's jest suite) runs on these, so a bump that breaks the
+  # build is caught before merge.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      builder-dev:
+        dependency-type: development
+
+  # The CAP app's own dependencies. They live HERE, in src/ -- the published
+  # app repo is regenerated on every publish, so a dependency bump merged
+  # over there is reverted by the next nightly (it happened: @cap-js/cds-test
+  # went to ^1.0.2 in cap2UI5/cap2UI5#67 and came back as ^1.0.1 in the
+  # publish commit two days later). src/package.json and src/package-lock.json
+  # are the only place an app dependency update survives.
+  #
+  # Grouped deliberately: @sap/* and @cap-js/* move together and a split PR
+  # per package produces a version skew that fails for reasons unrelated to
+  # either package.
   - package-ecosystem: npm
     directory: /src
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      cap:
+        patterns:
+          - "@sap/*"
+          - "@cap-js/*"
+      dev-dependencies:
+        dependency-type: development
+    ignore:
+      # openui5-dist pins the UI5 runtime served at /resources in local
+      # development (the deployed app gets UI5 from the `ui5` destination --
+      # scripts/vendor-core.js drops the package from the staged tree). The
+      # framework's supported-version story is tracked upstream in abap2UI5
+      # (floor 1.71), so bumping it is a deliberate decision with a
+      # compatibility question attached, not a routine dependency update --
+      # see the pin policy in builder-abap2UI5-js:AGENTS.md.
+      - dependency-name: openui5-dist

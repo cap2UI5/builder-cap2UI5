@@ -128,7 +128,9 @@ the app-discovery port to this project's `srv/app/`.
 
 There is nothing to configure: the UI5 runtime is served locally from the
 pinned `openui5-dist` dependency (works offline) and CAP deploys an
-in-memory SQLite database automatically on startup.
+in-memory SQLite database automatically on startup. On BTP that package is
+not deployed — the approuter routes `/resources` to the `ui5` destination,
+and `npm run build:production` leaves it out of the pushed module.
 
 ### Start it
 
@@ -159,12 +161,17 @@ curl -s http://localhost:4004/odata/v4/admin/z2ui5_t_01/\$count
 npm test
 ```
 
-runs the jest suite: [`test/starter.test.js`](test/starter.test.js) boots the
+runs the jest suite. [`test/starter.test.js`](test/starter.test.js) boots the
 real server via `cds.test()` and asserts all three layers end-to-end
 (starter page + bootstrap HTML, roundtrip returning view XML, draft row
-persisted per roundtrip), and
+persisted per roundtrip);
 [`test/view-builder-namespaces.test.js`](test/view-builder-namespaces.test.js)
-covers the view builder.
+covers the view builder; and
+[`test/production-build.test.js`](test/production-build.test.js) runs the real
+`npm run build:production` and asserts the staged `gen/srv` module is one CF
+can actually start — the framework it declares is present in the build output
+and the local UI5 runtime is not shipped. The rest pin the security model,
+draft retention, the approuter routes and the port contract against the core.
 
 ## Security model
 

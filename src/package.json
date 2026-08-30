@@ -9,14 +9,14 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@cap-js/hana": "^2",
+    "@cap-js/hana": "^3",
     "@sap/cds": "^10",
     "abap2UI5": "file:../run/input/core",
     "express": "^5"
   },
   "devDependencies": {
-    "@cap-js/cds-test": "^1.0.1",
-    "@cap-js/cds-types": "^0.18",
+    "@cap-js/cds-test": "^1.0.2",
+    "@cap-js/cds-types": "^0.19",
     "@cap-js/sqlite": "^3",
     "@sap/cds-dk": "^10",
     "jest": "^30",
@@ -28,6 +28,7 @@
     "watch": "cds watch",
     "watch-z2ui5": "cds watch --open z2ui5/webapp/index.html?sap-ui-xx-viewCache=false",
     "test": "jest",
+    "build:production": "cds build --production && node scripts/vendor-core.js",
     "undeploy": "cf undeploy cap2UI5 --delete-services --delete-service-keys --delete-service-brokers",
     "build": "rimraf resources mta_archives && mbt build --mtar archive",
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1"
