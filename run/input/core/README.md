@@ -7,17 +7,19 @@ platform code**. Every platform consumes this one package:
 | Consumer | How |
 |---|---|
 | [`cap2UI5`](https://github.com/cap2UI5/cap2UI5) | the full CAP app — `"abap2UI5": "file:./core"` (vendored copy of this package) |
-| [`adapters/cap/`](../adapters/cap/) | minimal CAP wrapper |
-| [`adapters/node/`](../adapters/node/) | bare `node:http` server |
-| [`adapters/express/`](../adapters/express/) | express middleware |
-| [`adapters/web/`](../adapters/web/) | serverless browser bundle |
+| [`adapters/cap/`](https://github.com/cap2UI5/builder-abap2UI5-js/tree/main/adapters/cap/) | minimal CAP wrapper |
+| [`adapters/node/`](https://github.com/cap2UI5/builder-abap2UI5-js/tree/main/adapters/node/) | bare `node:http` server |
+| [`adapters/express/`](https://github.com/cap2UI5/builder-abap2UI5-js/tree/main/adapters/express/) | express middleware |
+| [`adapters/web/`](https://github.com/cap2UI5/builder-abap2UI5-js/tree/main/adapters/web/) | serverless browser bundle |
 
 > [!IMPORTANT]
 > **This folder is a generated build artifact** — assembled from the
-> hand-written source in [`src/`](../src/) plus the transpiled
+> hand-written source in [`src/`](https://github.com/cap2UI5/builder-abap2UI5-js/tree/main/src/) plus the transpiled
 > upstream [abap2UI5](https://github.com/abap2UI5/abap2UI5) sources. Do not
-> hand-edit it; edit `src/` and re-run `npm run build_core` at the
-> [repo root](../).
+> hand-edit it; edit `src/` and re-run `npm run build_core` in
+> [builder-abap2UI5-js](https://github.com/cap2UI5/builder-abap2UI5-js) — the copy of this folder you may be
+> reading sits vendored inside the cap2UI5 app repo, where those paths
+> do not exist.
 
 ## Using it in a CAP project
 
