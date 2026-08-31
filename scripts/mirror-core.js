@@ -20,6 +20,11 @@
  * must not pin the nightly to an old core, so the newer of the two commits
  * wins (committer date; equal-or-older slot ⇒ HEAD). If the slot sha cannot
  * be fetched at all, the mirror falls back to HEAD with a warning.
+ *
+ * The same arbitration exists a second time in builder-cap2UI5-web's
+ * mirror.mjs (its trigger slot points at cap2UI5) — two implementations of
+ * one algorithm, kept in step by hand; whoever changes the rule here
+ * carries it there too.
  */
 "use strict";
 

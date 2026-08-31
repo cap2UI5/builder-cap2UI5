@@ -50,3 +50,15 @@ updates:
       # compatibility question attached, not a routine dependency update --
       # see the pin policy in builder-abap2UI5-js:AGENTS.md.
       - dependency-name: openui5-dist
+
+  # The html5 module the mta.yaml `abap2UI5` module builds (`ui5 build`).
+  # Same story as the root manifest above, one level down: `directory` is
+  # not recursive, no ecosystem covered this manifest, and its @ui5/cli
+  # never saw a proposed update. It publishes through to
+  # cap2UI5/app/z2ui5/package.json, where (as with every app dependency)
+  # a bump merged over there is reverted by the next publish - here is
+  # the only place it survives.
+  - package-ecosystem: npm
+    directory: /src/app/z2ui5
+    schedule:
+      interval: weekly
